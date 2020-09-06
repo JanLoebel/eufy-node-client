@@ -11,7 +11,7 @@ const PASSWORD = process.env.PASSWORD as string;
 const DSK_KEY = process.env.DSK_KEY as string;
 const P2P_DID = process.env.P2P_DID as string;
 const ACTOR_ID = process.env.ACTOR_ID as string;
-const STATION_SN = process.env.STATION_ID as string;
+const STATION_SN = process.env.STATION_SN as string;
 
 const mainHttp = async () => {
   const httpService = new HttpService(USERNAME, PASSWORD);
@@ -58,6 +58,6 @@ const mainP2pLocal = async () => {
   // devClientService.sendCommandWithIntString(1214, 2);
 };
 
-// mainHttp();
-mainP2pLocal();
+mainHttp();
+// mainP2pLocal();
 // mainP2pCloud();
