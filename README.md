@@ -40,3 +40,10 @@ F1D0 001C D102 0002 585A 5948 7F04 0800 0000 0100 FF00 0000 3F00 0000 0000 0000
 - Guard Mode: Geofence with App __type: control__
 
 F1D0 001C D102 0003 585A 5948 7F04 0800 0000 0100 FF00 0000 0100 0000 0000 0000s
+
+### home_security.so
+Decoded and found following information:
+- RC4: https://en.wikipedia.org/wiki/RC4
+- G711: https://en.wikipedia.org/wiki/G.711
+- A-law: https://en.wikipedia.org/wiki/A-law_algorithm
+
