@@ -1,3 +1,10 @@
+export interface ResultWrapper {
+  code: number;
+  msg: string;
+
+  data?: any;
+}
+
 export interface LoginResult {
   user_id: string;
   email: string;

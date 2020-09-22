@@ -2,20 +2,23 @@ import got from 'got';
 
 export const postRequest = async <T>(
   url: string,
-  requestBody?: Record<string, unknown>,
+  requestBody?: Record<string, unknown> | undefined,
   token?: string,
+  headers: Record<string, unknown> = {},
 ): Promise<T> => {
   const jsonBody = !!requestBody ? { json: { ...requestBody } } : {};
-  const headers = !!token ? { headers: { 'x-auth-token': token } } : {};
-
-  // console.log(`POST ${url}`, jsonBody, headers);
+  const resultHeaders = !!token ? { headers: { ...headers, 'x-auth-token': token } } : { ...headers };
   const { body } = await got.post<T>(url, {
     ...jsonBody,
-    ...headers,
+    ...resultHeaders,
     responseType: 'json',
   });
 
   const anyBody = body as any;
+  if (anyBody.code !== 0) {
+    throw new Error(`Request failed: ${anyBody.code} - ${anyBody.msg}`);
+  }
+
   if (!!anyBody.data) {
     return anyBody.data;
   }

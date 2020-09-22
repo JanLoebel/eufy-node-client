@@ -1,10 +1,26 @@
 import { postRequest } from './http.utils';
-import { LoginResult, Hub, DeviceRequest, FullDevice, DskKey, Stream } from './http-response.models';
+import { LoginResult, Hub, DeviceRequest, FullDevice, DskKey, Stream, ResultWrapper } from './http-response.models';
 import { HistoryRecordRequest, StreamRequest } from './http-request.models';
 
 export class HttpService {
   private baseUrl = 'https://mysecurity.eufylife.com/api/v1';
   private currentLoginResult: LoginResult | null = null;
+  private headers = {
+    app_version: 'v2.0.1_676',
+    os_type: 'android',
+    os_version: '25',
+    phone_model: 'SM-G930L',
+    country: 'DE',
+    language: 'de',
+    openudid: '8C85907EDD820000',
+    uid: '',
+    net_type: 'wifi',
+    mnc: '02',
+    mcc: '262',
+    sn: '07EDD8200008C859',
+    model_type: 'PHONE',
+    'user-agent': 'okhttp/3.12.1',
+  };
 
   constructor(private username: string, private password: string) {}
 
@@ -62,9 +78,30 @@ export class HttpService {
     return await this.requestWithToken(`/web/equipment/stop_stream`, reqBody);
   }
 
-  private async requestWithToken<T>(path: string, body?: any): Promise<T> {
+  public async pushTokenCheck(): Promise<ResultWrapper> {
+    const reqBody = {
+      app_type: 'eufySecurity',
+      transaction: '',
+    };
+    return await this.requestWithToken<ResultWrapper>(`/app/review/app_push_check`, reqBody, this.headers);
+  }
+
+  public async registerPushToken(pushToken: string): Promise<ResultWrapper> {
+    const reqBody = {
+      is_notification_enable: true,
+      token: pushToken,
+      transaction: '',
+    };
+    return await this.requestWithToken<ResultWrapper>(`/apppush/register_push_token`, reqBody, this.headers);
+  }
+
+  private async requestWithToken<T>(
+    path: string,
+    body?: Record<string, unknown> | undefined,
+    headers?: Record<string, unknown>,
+  ): Promise<T> {
     const token = await this.getToken();
-    return await postRequest(`${this.baseUrl}${path}`, body, token);
+    return await postRequest(`${this.baseUrl}${path}`, body, token, headers);
   }
 
   private async getToken(): Promise<string> {
