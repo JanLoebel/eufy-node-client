@@ -3,6 +3,8 @@ import { HttpService } from './http/http.service';
 import { CloudLookupService } from './p2p/cloud-lookup.service';
 import { LocalLookupService } from './p2p/local-lookup.service';
 import { DeviceClientService } from './p2p/device-client.service';
+import { PushService } from './push/push.service';
+import { PushMessage } from './push/push.model';
 
 // Read from env
 dotenv.config();
@@ -58,6 +60,21 @@ const mainP2pLocal = async () => {
   // devClientService.sendCommandWithIntString(1214, 2);
 };
 
-mainHttp();
+const mainPush = async () => {
+  const pushService = new PushService();
+  const credentials = await pushService.createPushCredentials();
+  pushService.listen(credentials, (msg: PushMessage) => {
+    console.log('push-msg-data:', msg.data);
+  });
+
+  // Register generated token
+  const fcmToken = credentials.fcm.token;
+  const httpService = new HttpService(USERNAME, PASSWORD);
+  await httpService.registerPushToken(fcmToken);
+  await httpService.pushTokenCheck();
+};
+
+// mainHttp();
 // mainP2pLocal();
 // mainP2pCloud();
+mainPush();

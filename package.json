@@ -22,7 +22,8 @@
   "dependencies": {
     "dgram": "^1.0.1",
     "dotenv": "^8.2.0",
-    "got": "^11.5.2"
+    "got": "^11.5.2",
+    "push-receiver": "^2.1.1"
   },
   "devDependencies": {
     "@types/node": "^14.6.2",
