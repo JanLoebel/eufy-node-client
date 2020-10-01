@@ -15,13 +15,16 @@ export class PushService {
       senderId: this.APP_SENDER_ID,
       appId: this.APP_ID,
     });
-    return {
+    const result = {
       ...fcmCredentials,
       gcm: gcmCredentials,
     };
+    console.log('Registered and got credentials:', result);
+    return result;
   }
 
   public listen(credentials: Credentials, callback: (msg: PushMessage) => void): void {
+    console.log('Registered push receiver with credentials:', credentials);
     pushReceiverListen(credentials, (msg: FCMEufyPushMessage) => {
       const payload = JSON.parse(Buffer.from(msg.notification.data.payload, 'base64').toString());
       callback({

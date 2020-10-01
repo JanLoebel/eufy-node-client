@@ -61,6 +61,7 @@ const mainP2pLocal = async () => {
 };
 
 const mainPush = async () => {
+  console.log('Starting...');
   const pushService = new PushService();
   const credentials = await pushService.createPushCredentials();
   pushService.listen(credentials, (msg: PushMessage) => {
@@ -71,7 +72,11 @@ const mainPush = async () => {
   const fcmToken = credentials.fcm.token;
   const httpService = new HttpService(USERNAME, PASSWORD);
   await httpService.registerPushToken(fcmToken);
+  console.log('Registered at eufy with:', fcmToken);
+
   await httpService.pushTokenCheck();
+  console.log('Executed push token check');
+  console.log('Ready to listen to push events...');
 };
 
 // mainHttp();
