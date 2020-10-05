@@ -34,14 +34,28 @@ export const buildIntCommandPayload = (value: number, actor: string): Buffer => 
   return Buffer.concat([headerBuffer, magicBuffer, valueBuffer, magicBuffer2, actorBuffer, rest]);
 };
 
-export const buildIntStringCommandPayload = (value: number, actor: string): Buffer => {
+export const buildIntStringCommandPayload = (value: number, actor: string, channel = 0): Buffer => {
   const headerBuffer = Buffer.from([0x88, 0x00]);
-  const magicBuffer = Buffer.from([0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-  const valueBuffer = Buffer.from([value]);
-  const magicBuffer2 = Buffer.from([0x00, 0x00, 0x00]);
+  const emptyBuffer = Buffer.from([0x00, 0x00]);
+  const magicBuffer = Buffer.from([0x1, 0x00]);
+  const channelBuffer = Buffer.from([channel, 0x00]);
+  const valueBuffer = Buffer.from([value, 0x00]);
   const actorBuffer = Buffer.from(actor);
   const rest = Buffer.alloc(88);
-  return Buffer.concat([headerBuffer, magicBuffer, valueBuffer, magicBuffer2, actorBuffer, rest]);
+
+  return Buffer.concat([
+    headerBuffer,
+    emptyBuffer,
+    magicBuffer,
+    channelBuffer,
+    emptyBuffer,
+    channelBuffer,
+    emptyBuffer,
+    valueBuffer,
+    emptyBuffer,
+    actorBuffer,
+    rest,
+  ]);
 };
 
 const intToArray = (inp: string | number): Array<number> => {

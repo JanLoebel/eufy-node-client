@@ -31,8 +31,10 @@ const mainHttp = async () => {
   const dsk = await httpService.stationDskKeys(STATION_SN);
   console.log('DSK_KEY', dsk.dsk_keys[0]?.dsk_key);
 
-  // const history = await httpService.allHistoryRecord();
-  // console.log(history);
+  /*
+  const history = await httpService.allHistoryRecord();
+  console.log(history);
+  */
 };
 
 const mainP2pCloud = async () => {
@@ -57,7 +59,7 @@ const mainP2pLocal = async () => {
   devClientService.sendCommandWithInt(1224, 1);
 
   // CMD_SET_DEVS_OSD = 1214 # 1 => disabled # 2 => enable
-  // devClientService.sendCommandWithIntString(1214, 2);
+  devClientService.sendCommandWithIntString(1214, 1, 0);
 };
 
 const mainPush = async () => {
@@ -82,4 +84,4 @@ const mainPush = async () => {
 // mainHttp();
 // mainP2pLocal();
 // mainP2pCloud();
-mainPush();
+// mainPush();

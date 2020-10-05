@@ -59,8 +59,8 @@ export class DeviceClientService {
     sendMessage(this.socket, this.address, RequestMessageType.PING);
   }
 
-  public sendCommandWithIntString(commandType: number, value: number): void {
-    const payload = buildIntStringCommandPayload(value, this.actor);
+  public sendCommandWithIntString(commandType: number, value: number, channel = 0): void {
+    const payload = buildIntStringCommandPayload(value, this.actor, channel);
     this.sendCommand(commandType, payload);
   }
 
@@ -145,6 +145,7 @@ export class DeviceClientService {
     const commandId = msg.slice(12, 14).readUIntLE(0, 2); // could also be the parameter type on DATA events (1224 = GUARD)
     const data = msg.slice(24, 26).readUIntLE(0, 2); // 0 = Away, 1 = Home, 63 = Deactivated
     // Note: data === 65420 when e.g. data mode is already set (guardMode=0, setting guardMode=0 => 65420)
+    // Note: data ==== 65430 when there is an error (sending data to a channel which do not exist)
     console.log(commandId, data);
   }
 
