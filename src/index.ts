@@ -6,6 +6,7 @@ import { DeviceClientService } from './p2p/device-client.service';
 import { PushService } from './push/push.service';
 import { PushMessage } from './push/push.model';
 import { CommandType } from './p2p/command.model';
+import { buildCommandHeader, buildStringTypeCommandPayload } from './p2p/payload.utils';
 
 // Read from env
 dotenv.config();
@@ -93,8 +94,22 @@ const mainReadMultiPackages = async () => {
   devClientService.sendCommandWithInt(CommandType.CMD_CAMERA_INFO, 255);
 };
 
+const mainStartVideoDownload = async () => {
+  const lookupService = new LocalLookupService();
+  const address = await lookupService.lookup('192.168.68.101');
+  console.log('Found address', address);
+
+  const devClientService = new DeviceClientService(address, P2P_DID, ACTOR_ID);
+  await devClientService.connect();
+
+  const fileName = '/media/mmcblk0p1/Camera00/h265_20201005114502.dat';
+  const userId = '38c5ff3793e8b62e3edfab103e3f5a5d8665bc84';
+  devClientService.sendCommandWithString(CommandType.CMD_DOWNLOAD_VIDEO, fileName, userId);
+};
+
 // mainHttp();
 // mainP2pLocal();
 // mainP2pCloud();
 // mainPush();
 mainReadMultiPackages();
+// mainStartVideoDownload();

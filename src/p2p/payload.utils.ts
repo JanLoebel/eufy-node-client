@@ -1,4 +1,7 @@
 import { Socket } from 'dgram';
+import { CommandType } from './command.model';
+
+export const MAGIC_WORD = 'XZYH';
 
 export const buildLookupWithKeyPayload = (socket: Socket, p2pDid: string, dskKey: string): Buffer => {
   const p2pDidBuffer = p2pDidToBuffer(p2pDid);
@@ -34,10 +37,17 @@ export const buildIntCommandPayload = (value: number, actor: string): Buffer => 
   return Buffer.concat([headerBuffer, magicBuffer, valueBuffer, magicBuffer2, actorBuffer, rest]);
 };
 
+export const buildStringTypeCommandPayload = (strValue: string, valueStrSub: string): Buffer => {
+  const magic = Buffer.from([0x05, 0x01, 0x00, 0x00, 0x01, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+  const strValueBuffer = stringWithLength(strValue, 128);
+  const valueStrSubBuffer = stringWithLength(valueStrSub, 128);
+  return Buffer.concat([magic, strValueBuffer, valueStrSubBuffer]);
+};
+
 export const buildIntStringCommandPayload = (value: number, actor: string, channel = 0): Buffer => {
   const headerBuffer = Buffer.from([0x88, 0x00]);
   const emptyBuffer = Buffer.from([0x00, 0x00]);
-  const magicBuffer = Buffer.from([0x1, 0x00]);
+  const magicBuffer = Buffer.from([0x01, 0x00]);
   const channelBuffer = Buffer.from([channel, 0x00]);
   const valueBuffer = Buffer.from([value, 0x00]);
   const actorBuffer = Buffer.from(actor);
@@ -56,6 +66,14 @@ export const buildIntStringCommandPayload = (value: number, actor: string, chann
     actorBuffer,
     rest,
   ]);
+};
+
+export const buildCommandHeader = (seqNumber: number, commandType: CommandType): Buffer => {
+  const dataTypeBuffer = Buffer.from([0xd1, 0x00]);
+  const seqAsBuffer = intToBufferBE(seqNumber, 2);
+  const magicString = Buffer.from(MAGIC_WORD);
+  const commandTypeBuffer = intToBufferLE(commandType, 2);
+  return Buffer.concat([dataTypeBuffer, seqAsBuffer, magicString, commandTypeBuffer]);
 };
 
 const intToArray = (inp: string | number): Array<number> => {
@@ -121,4 +139,10 @@ const p2pDidToBuffer = (p2pDid: string): Buffer => {
   const buf3 = Buffer.from(p2pArray[2]);
   const buf4 = Buffer.from([0x00, 0x00, 0x00]);
   return Buffer.concat([buf1, buf2, buf3, buf4], 20);
+};
+
+const stringWithLength = (input: string, targetByteLength = 128): Buffer => {
+  const stringAsBuffer = Buffer.from(input);
+  const postZeros = Buffer.alloc(targetByteLength - stringAsBuffer.byteLength);
+  return Buffer.concat([stringAsBuffer, postZeros]);
 };
