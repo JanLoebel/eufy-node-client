@@ -37,10 +37,10 @@ export const buildIntCommandPayload = (value: number, actor: string): Buffer => 
   return Buffer.concat([headerBuffer, magicBuffer, valueBuffer, magicBuffer2, actorBuffer, rest]);
 };
 
-export const buildStringTypeCommandPayload = (strValue: string, valueStrSub: string): Buffer => {
+export const buildStringTypeCommandPayload = (strValue: string, actor: string): Buffer => {
   const magic = Buffer.from([0x05, 0x01, 0x00, 0x00, 0x01, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
   const strValueBuffer = stringWithLength(strValue, 128);
-  const valueStrSubBuffer = stringWithLength(valueStrSub, 128);
+  const valueStrSubBuffer = stringWithLength(actor, 128);
   return Buffer.concat([magic, strValueBuffer, valueStrSubBuffer]);
 };
 

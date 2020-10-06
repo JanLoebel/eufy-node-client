@@ -11,8 +11,6 @@ import {
   MAGIC_WORD,
 } from './payload.utils';
 import { CommandType } from './command.model';
-import { exit } from 'process';
-import { runInThisContext } from 'vm';
 
 export class DeviceClientService {
   private addressTimeoutInMs = 3 * 1000;
@@ -22,6 +20,18 @@ export class DeviceClientService {
   private seenSeqNo: {
     [dataType: string]: number;
   } = {};
+
+  private currentControlMessageBuilder: {
+    bytesToRead: number;
+    bytesRead: number;
+    commandId: number;
+    messages: { [seqNo: number]: Buffer };
+  } = {
+    bytesToRead: 0,
+    bytesRead: 0,
+    commandId: 0,
+    messages: {},
+  };
 
   constructor(private address: Address, private p2pDid: string, private actor: string) {
     this.socket = createSocket('udp4');
@@ -76,9 +86,9 @@ export class DeviceClientService {
     this.sendCommand(commandType, payload);
   }
 
-  public sendCommandWithString(commandType: CommandType, value: string, value2: string): void {
+  public sendCommandWithString(commandType: CommandType, value: string): void {
     // SET_COMMAND_WITH_STRING_TYPE = msgTypeID == 6
-    const payload = buildStringTypeCommandPayload(value, value2);
+    const payload = buildStringTypeCommandPayload(value, this.actor);
     this.sendCommand(commandType, payload);
   }
 
@@ -140,7 +150,6 @@ export class DeviceClientService {
       }
       this.seenSeqNo[dataType] = seqNo;
 
-      console.log(`Processing ${dataType} with seq ${seqNo}...`);
       this.sendAck(dataTypeBuffer, seqNo);
       this.handleData(seqNo, dataType, msg);
     } else {
@@ -150,7 +159,6 @@ export class DeviceClientService {
 
   private handleData(seqNo: number, dataType: string, msg: Buffer): void {
     if (dataType === 'CONTROL') {
-      console.log(msg.toString('hex'));
       this.parseDataControlMessage(seqNo, msg);
     } else if (dataType === 'DATA') {
       const commandId = msg.slice(12, 14).readUIntLE(0, 2); // could also be the parameter type on DATA events (1224 = GUARD)
@@ -168,48 +176,22 @@ export class DeviceClientService {
 
   private videoBuffer = Buffer.from([]);
   private parseBinaryMessage(seqNo: number, msg: Buffer): void {
-    const multiPartMessage = msg.slice(2, 4).compare(Buffer.from([0x04, 0x04])) === 0;
-    const lastPartMessage = msg.slice(2, 4).compare(Buffer.from([0x00, 0xbc])) === 0;
+    // TODO not working yet
     const firstPartMessage = msg.slice(8, 12).toString() === MAGIC_WORD;
-
-    console.log('firstPartMessage', firstPartMessage);
-    console.log('multiPartMessage', multiPartMessage);
-    console.log('lastPartMessage', lastPartMessage);
-
     if (firstPartMessage) {
       const payload = msg.slice(24);
       appendFileSync('test.mp4', payload);
-    } else if (multiPartMessage) {
-      const payload = msg.slice(9);
-      appendFileSync('test.mp4', payload);
-    } else if (lastPartMessage) {
-      const payload = msg.slice(9);
-      appendFileSync('test.mp4', payload);
-    } else {
-      console.log(msg.toString('hex'));
-      exit(1);
     }
-
-    // exit(1);
-
-    // appendFileSync('test.log', msg);
   }
-
-  private currentControlMessageBuilder: {
-    bytesToRead: number;
-    bytesRead: number;
-    messages: { [seqNo: number]: Buffer };
-  } = {
-    bytesToRead: 0,
-    bytesRead: 0,
-    messages: {},
-  };
 
   private parseDataControlMessage(seqNo: number, msg: Buffer): void {
     // is this the first message?
     const firstPartMessage = msg.slice(8, 12).toString() === MAGIC_WORD;
 
     if (firstPartMessage) {
+      const commandId = msg.slice(12, 14).readUIntLE(0, 2);
+      this.currentControlMessageBuilder.commandId = commandId;
+
       const bytesToRead = msg.slice(14, 16).readUIntLE(0, 2);
       this.currentControlMessageBuilder.bytesToRead = bytesToRead;
 
@@ -224,21 +206,22 @@ export class DeviceClientService {
     }
 
     if (this.currentControlMessageBuilder.bytesRead >= this.currentControlMessageBuilder.bytesToRead) {
+      const commandId = this.currentControlMessageBuilder.commandId;
       const messages = this.currentControlMessageBuilder.messages;
       // sort by keys
       let completeMessage = Buffer.from([]);
       Object.keys(messages)
-        .sort()
+        .sort() // assure the seqNumbers are in correct order
         .forEach((key: string) => {
           completeMessage = Buffer.concat([completeMessage, messages[parseInt(key)]]);
         });
-      this.currentControlMessageBuilder = { bytesRead: 0, bytesToRead: 0, messages: {} };
-      this.handleDataControl(completeMessage.toString());
+      this.currentControlMessageBuilder = { bytesRead: 0, bytesToRead: 0, commandId: 0, messages: {} };
+      this.handleDataControl(commandId, completeMessage.toString());
     }
   }
 
-  private handleDataControl(message: string) {
-    console.log('DATA - CONTROL ->', message);
+  private handleDataControl(commandId: number, message: string) {
+    console.log(`DATA - CONTROL message with commandId: ${CommandType[commandId]} (${commandId})`, message);
   }
 
   private sendAck(dataType: Buffer, seqNo: number) {

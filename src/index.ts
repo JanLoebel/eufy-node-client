@@ -95,6 +95,7 @@ const mainReadMultiPackages = async () => {
 };
 
 const mainStartVideoDownload = async () => {
+  // TODO NOT YET WORKING!
   const lookupService = new LocalLookupService();
   const address = await lookupService.lookup('192.168.68.101');
   console.log('Found address', address);
@@ -103,8 +104,7 @@ const mainStartVideoDownload = async () => {
   await devClientService.connect();
 
   const fileName = '/media/mmcblk0p1/Camera00/h265_20201005114502.dat';
-  const userId = '38c5ff3793e8b62e3edfab103e3f5a5d8665bc84';
-  devClientService.sendCommandWithString(CommandType.CMD_DOWNLOAD_VIDEO, fileName, userId);
+  devClientService.sendCommandWithString(CommandType.CMD_DOWNLOAD_VIDEO, fileName);
 };
 
 // mainHttp();
