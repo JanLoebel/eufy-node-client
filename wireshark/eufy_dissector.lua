@@ -26,6 +26,9 @@ commandIds = {
   [1139] = "CMD_PING",
   [1103] = "CMD_CAMERA_INFO",
   [1350] = "CMD_SET_PAYLOAD",
+  [1024] = "CMD_DOWNLOAD_VIDEO",
+  [1025] = "CMD_RECORD_VIEW",
+  [1026] = "CMD_RECORD_PLAY_CTRL",
 }
 
 -- helper method
@@ -127,7 +130,7 @@ function eufySecurity_proto.dissector(buffer, pinfo, tree)
   if (str_type == "LOOKUP_WITH_DSK request") then
     local p2pConInfo = "Port: " .. buffer(26, 2):le_uint() .. " - IP: " .. buffer(28, 1):uint() .. "." .. buffer(29, 1):uint() .. "." .. buffer(30, 1):uint() .. "." .. buffer(31, 1):uint()
     subtree:add(F_p2pConInfo, buffer(28, 4), p2pConInfo)
-    
+
     local p2pdsk = buffer(44, 20):string()
     subtree:add(F_p2pDsk, buffer(44, 20), p2pdsk)
   end
@@ -167,7 +170,7 @@ function eufySecurity_proto.dissector(buffer, pinfo, tree)
         -- Command Id
         local p2pDataCommandId = buffer(12, 2):le_uint()
         if (commandIds[p2pDataCommandId]) then
-          subtree:add(F_p2pDataCommandId, buffer(12, 2), commandIds[p2pDataCommandId])
+          subtree:add(F_p2pDataCommandId, buffer(12, 2), "" .. commandIds[p2pDataCommandId] .. " (" .. p2pDataCommandId .. ")")
           pinfo.cols.info:append(" - " .. commandIds[p2pDataCommandId])
         else
           subtree:add(F_p2pDataCommandId, buffer(12, 2), "Unknown: " .. p2pDataCommandId)

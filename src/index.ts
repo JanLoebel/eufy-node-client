@@ -5,6 +5,7 @@ import { LocalLookupService } from './p2p/local-lookup.service';
 import { DeviceClientService } from './p2p/device-client.service';
 import { PushService } from './push/push.service';
 import { PushMessage } from './push/push.model';
+import { CommandType } from './p2p/command.model';
 
 // Read from env
 dotenv.config();
@@ -55,11 +56,11 @@ const mainP2pLocal = async () => {
   const devClientService = new DeviceClientService(address, P2P_DID, ACTOR_ID);
   await devClientService.connect();
 
-  // CMD_SET_ARMING = 1224  # 0 => away 1 => home, 2 => schedule, 63 => disarmed
-  devClientService.sendCommandWithInt(1224, 1);
+  // CMD_SET_ARMING  # 0 => away 1 => home, 2 => schedule, 63 => disarmed
+  devClientService.sendCommandWithInt(CommandType.CMD_SET_ARMING, 1);
 
-  // CMD_SET_DEVS_OSD = 1214 # 1 => disabled # 2 => enable
-  devClientService.sendCommandWithIntString(1214, 1, 0);
+  // CMD_SET_DEVS_OSD # 1 => disabled # 2 => enable
+  devClientService.sendCommandWithIntString(CommandType.CMD_SET_DEVS_OSD, 1, 0);
 };
 
 const mainPush = async () => {
@@ -81,7 +82,19 @@ const mainPush = async () => {
   console.log('Ready to listen to push events...');
 };
 
+const mainReadMultiPackages = async () => {
+  const lookupService = new LocalLookupService();
+  const address = await lookupService.lookup('192.168.68.101');
+  console.log('Found address', address);
+
+  const devClientService = new DeviceClientService(address, P2P_DID, ACTOR_ID);
+  await devClientService.connect();
+
+  devClientService.sendCommandWithInt(CommandType.CMD_CAMERA_INFO, 255);
+};
+
 // mainHttp();
 // mainP2pLocal();
 // mainP2pCloud();
 // mainPush();
+mainReadMultiPackages();

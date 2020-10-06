@@ -8,8 +8,11 @@ import {
   buildIntCommandPayload,
   buildIntStringCommandPayload,
 } from './payload.utils';
+import { CommandType } from './command.model';
 
 export class DeviceClientService {
+  private readonly MAGIC_WORD = 'XZYH';
+
   private addressTimeoutInMs = 3 * 1000;
   private socket: Socket;
   private connected = false;
@@ -17,6 +20,8 @@ export class DeviceClientService {
   private seenSeqNo: {
     [dataType: string]: number;
   } = {};
+
+  private currentControlMessageBuilder: Record<number, Buffer> = {};
 
   constructor(private address: Address, private p2pDid: string, private actor: string) {
     this.socket = createSocket('udp4');
@@ -59,26 +64,28 @@ export class DeviceClientService {
     sendMessage(this.socket, this.address, RequestMessageType.PING);
   }
 
-  public sendCommandWithIntString(commandType: number, value: number, channel = 0): void {
+  public sendCommandWithIntString(commandType: CommandType, value: number, channel = 0): void {
+    // SET_COMMAND_WITH_INT_STRING_TYPE = msgTypeID == 10
     const payload = buildIntStringCommandPayload(value, this.actor, channel);
     this.sendCommand(commandType, payload);
   }
 
-  public sendCommandWithInt(commandType: number, value: number): void {
+  public sendCommandWithInt(commandType: CommandType, value: number): void {
+    // SET_COMMAND_WITH_INT_TYPE = msgTypeID == 4
     const payload = buildIntCommandPayload(value, this.actor);
     this.sendCommand(commandType, payload);
   }
 
-  private sendCommand(commandType: number, payload: Buffer): void {
+  private sendCommand(commandType: CommandType, payload: Buffer): void {
     // Command header
     const msgSeqNumber = this.seqNumber++;
     const dataTypeBuffer = Buffer.from([0xd1, 0x00]);
     const seqAsBuffer = intToBufferBE(msgSeqNumber, 2);
-    const magicString = Buffer.from('XZYH');
+    const magicString = Buffer.from(this.MAGIC_WORD);
     const commandTypeBuffer = intToBufferLE(commandType, 2);
     const commandHeader = Buffer.concat([dataTypeBuffer, seqAsBuffer, magicString, commandTypeBuffer]);
     const data = Buffer.concat([commandHeader, payload]);
-    console.log(`Sending commandType: ${commandType} with seqNum: ${msgSeqNumber}...`);
+    console.log(`Sending commandType: ${CommandType[commandType]} (${commandType}) with seqNum: ${msgSeqNumber}...`);
     sendMessage(this.socket, this.address, RequestMessageType.DATA, data);
     // -> NOTE:
     // -> We could wait for an ACK and then continue (sync)
@@ -115,7 +122,7 @@ export class DeviceClientService {
         const seqBuffer = msg.slice(idx, idx + 2);
         const ackedSeqNo = seqBuffer.readUIntBE(0, seqBuffer.length);
         // -> Message with seqNo was received at the station
-        console.log('ACK for seqno', ackedSeqNo);
+        console.log(`ACK for seqNo: ${ackedSeqNo}`);
       }
     } else if (hasHeader(msg, ResponseMessageType.DATA)) {
       const seqNo = msg[6] * 256 + msg[7];
@@ -138,20 +145,59 @@ export class DeviceClientService {
     }
   }
 
-  public handleData(seqNo: number, dataType: string, msg: Buffer): void {
-    console.log(`Data to handle: seqNo: ${seqNo} - dataType: ${dataType} - msg: ${msg.toString('hex')}`);
+  private handleData(seqNo: number, dataType: string, msg: Buffer): void {
+    if (dataType === 'CONTROL') {
+      this.parseDataControlMessage(seqNo, msg);
+    } else if (dataType === 'DATA') {
+      const commandId = msg.slice(12, 14).readUIntLE(0, 2); // could also be the parameter type on DATA events (1224 = GUARD)
+      const data = msg.slice(24, 26).readUIntLE(0, 2); // 0 = Away, 1 = Home, 63 = Deactivated
+      // Note: data === 65420 when e.g. data mode is already set (guardMode=0, setting guardMode=0 => 65420)
+      // Note: data ==== 65430 when there is an error (sending data to a channel which do not exist)
+      const commandStr = CommandType[commandId];
+      console.log(`DATA package with commandId: ${commandStr} (${commandId}) - data: ${data}`);
+    } else {
+      console.log(`Data to handle: seqNo: ${seqNo} - dataType: ${dataType} - msg: ${msg.toString('hex')}`);
+    }
+  }
 
-    // TODO
-    const commandId = msg.slice(12, 14).readUIntLE(0, 2); // could also be the parameter type on DATA events (1224 = GUARD)
-    const data = msg.slice(24, 26).readUIntLE(0, 2); // 0 = Away, 1 = Home, 63 = Deactivated
-    // Note: data === 65420 when e.g. data mode is already set (guardMode=0, setting guardMode=0 => 65420)
-    // Note: data ==== 65430 when there is an error (sending data to a channel which do not exist)
-    console.log(commandId, data);
+  private parseDataControlMessage(seqNo: number, msg: Buffer) {
+    // is this the first message?
+    const multiPartMessage = msg.slice(2, 4).compare(Buffer.from([0x04, 0x04])) === 0;
+    const lastPartMessage = msg.slice(2, 4).compare(Buffer.from([0x03, 0xa2])) === 0;
+    const firstPartMessage = msg.slice(8, 12).toString() === this.MAGIC_WORD;
+
+    if (firstPartMessage) {
+      const payload = msg.slice(24);
+      this.currentControlMessageBuilder[seqNo] = payload;
+      // first part of the message
+    } else if (multiPartMessage) {
+      const payload = msg.slice(9);
+      this.currentControlMessageBuilder[seqNo] = payload;
+      // Just append
+    } else if (lastPartMessage) {
+      // finish message and print
+      const payload = msg.slice(9);
+      this.currentControlMessageBuilder[seqNo] = payload;
+
+      // sort by keys
+      let completeMessage = Buffer.from([]);
+      Object.keys(this.currentControlMessageBuilder)
+        .sort()
+        .forEach((key: string) => {
+          completeMessage = Buffer.concat([completeMessage, this.currentControlMessageBuilder[parseInt(key)]]);
+        });
+      this.currentControlMessageBuilder = {};
+      this.handleDataControl(completeMessage.toString());
+    }
+  }
+
+  private handleDataControl(message: string) {
+    console.log('DATA - CONTROL ->', message);
   }
 
   private sendAck(dataType: Buffer, seqNo: number) {
-    const num_pending_acks = 1;
-    const pendingAcksBuffer = Buffer.from([Math.floor(num_pending_acks / 256), num_pending_acks % 256]);
+    const numPendingAcks = 1;
+    const pendingAcksBuffer = Buffer.from([Math.floor(numPendingAcks / 256), numPendingAcks % 256]);
     const seqBuffer = Buffer.from([Math.floor(seqNo / 256), seqNo % 256]);
     const payload = Buffer.concat([dataType, pendingAcksBuffer, seqBuffer]);
     sendMessage(this.socket, this.address, RequestMessageType.ACK, payload);
