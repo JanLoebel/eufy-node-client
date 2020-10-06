@@ -59,8 +59,6 @@ local F_p2pAddrPort = ProtoField.new("P2P Addr Port", "eufySecurity.p2pAddrPort"
 local F_p2pAddrIp = ProtoField.new("P2P Addr Ip", "eufySecurity.p2pAddrIp", ftypes.STRING, nil, nil, nil, "TODO")
 local F_p2pSeqNo = ProtoField.new("P2P SeqNo", "eufySecurity.p2pSeqNo", ftypes.UINT8, nil, nil, nil, "TODO")
 local F_p2pDataType = ProtoField.new("P2P DataType", "eufySecurity.p2pDataType", ftypes.STRING, nil, nil, nil, "TODO")
-local F_p2pDataMultiPart = ProtoField.new("P2P DataMultiPart", "eufySecurity.p2pDataMultiPart", ftypes.BOOLEAN, nil, nil, nil, "TODO")
-local F_p2pDataMultiPartLastMsg = ProtoField.new("P2P DataMultiPart LastMsg", "eufySecurity.p2pDataMultiPart", ftypes.BOOLEAN, nil, nil, nil, "TODO")
 local F_p2pDataCommandId = ProtoField.new("P2P Data Command Id", "eufySecurity.p2pCommandId", ftypes.STRING, nil, nil, nil, "TODO")
 local F_p2pAckSeqNo = ProtoField.new("P2P Ack SeqNumbers", "eufySecurity.p2pAckSeqNos", ftypes.STRING, nil, nil, nil, "TODO")
 
@@ -79,8 +77,6 @@ eufySecurity_proto.fields = {
   F_p2pAddrIp,
   F_p2pSeqNo,
   F_p2pDataType,
-  F_p2pDataMultiPart,
-  F_p2pDataMultiPartLastMsg,
   F_p2pDataCommandId,
   F_p2pAckSeqNo
 }
@@ -179,17 +175,6 @@ function eufySecurity_proto.dissector(buffer, pinfo, tree)
     else
       subtree:add(F_p2pDataType, buffer(4, 2), "Unknown DataType")
     end
-
-    -- Multipart message
-    if (buffer(2, 2):uint() == 0x0404) then
-      subtree:add(F_p2pDataMultiPart, buffer(2, 2), true)
-    end
-
-    -- Last Multipart message
-    if (buffer(2, 1):uint() == 0x03) then
-      subtree:add(F_p2pDataMultiPartLastMsg, buffer(2, 2), true)
-    end
-
   end
 end
 
