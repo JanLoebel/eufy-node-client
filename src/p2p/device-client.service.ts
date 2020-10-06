@@ -21,7 +21,15 @@ export class DeviceClientService {
     [dataType: string]: number;
   } = {};
 
-  private currentControlMessageBuilder: Record<number, Buffer> = {};
+  private currentControlMessageBuilder: {
+    bytesToRead: number;
+    bytesRead: number;
+    messages: { [seqNo: number]: Buffer };
+  } = {
+    bytesToRead: 0,
+    bytesRead: 0,
+    messages: {},
+  };
 
   constructor(private address: Address, private p2pDid: string, private actor: string) {
     this.socket = createSocket('udp4');
@@ -160,33 +168,34 @@ export class DeviceClientService {
     }
   }
 
-  private parseDataControlMessage(seqNo: number, msg: Buffer) {
+  private parseDataControlMessage(seqNo: number, msg: Buffer): void {
     // is this the first message?
-    const multiPartMessage = msg.slice(2, 4).compare(Buffer.from([0x04, 0x04])) === 0;
-    const lastPartMessage = msg.slice(2, 4).compare(Buffer.from([0x03, 0xa2])) === 0;
     const firstPartMessage = msg.slice(8, 12).toString() === this.MAGIC_WORD;
 
     if (firstPartMessage) {
-      const payload = msg.slice(24);
-      this.currentControlMessageBuilder[seqNo] = payload;
-      // first part of the message
-    } else if (multiPartMessage) {
-      const payload = msg.slice(9);
-      this.currentControlMessageBuilder[seqNo] = payload;
-      // Just append
-    } else if (lastPartMessage) {
-      // finish message and print
-      const payload = msg.slice(9);
-      this.currentControlMessageBuilder[seqNo] = payload;
+      const bytesToRead = msg.slice(14, 16).readUIntLE(0, 2);
+      this.currentControlMessageBuilder.bytesToRead = bytesToRead;
 
+      const payload = msg.slice(24);
+      this.currentControlMessageBuilder.messages[seqNo] = payload;
+      this.currentControlMessageBuilder.bytesRead += payload.byteLength;
+    } else {
+      // finish message and print
+      const payload = msg.slice(8);
+      this.currentControlMessageBuilder.messages[seqNo] = payload;
+      this.currentControlMessageBuilder.bytesRead += payload.byteLength;
+    }
+
+    if (this.currentControlMessageBuilder.bytesRead >= this.currentControlMessageBuilder.bytesToRead) {
+      const messages = this.currentControlMessageBuilder.messages;
       // sort by keys
       let completeMessage = Buffer.from([]);
-      Object.keys(this.currentControlMessageBuilder)
+      Object.keys(messages)
         .sort()
         .forEach((key: string) => {
-          completeMessage = Buffer.concat([completeMessage, this.currentControlMessageBuilder[parseInt(key)]]);
+          completeMessage = Buffer.concat([completeMessage, messages[parseInt(key)]]);
         });
-      this.currentControlMessageBuilder = {};
+      this.currentControlMessageBuilder = { bytesRead: 0, bytesToRead: 0, messages: {} };
       this.handleDataControl(completeMessage.toString());
     }
   }
