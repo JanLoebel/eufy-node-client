@@ -1,18 +1,18 @@
 import { createSocket, Socket } from 'dgram';
+import { appendFileSync } from 'fs';
 import { Address } from './models';
 import { sendMessage, RequestMessageType, hasHeader, ResponseMessageType } from './message.utils';
 import {
   buildCheckCamPayload,
-  intToBufferLE,
-  intToBufferBE,
   buildIntCommandPayload,
   buildIntStringCommandPayload,
+  buildStringTypeCommandPayload,
+  buildCommandHeader,
+  MAGIC_WORD,
 } from './payload.utils';
 import { CommandType } from './command.model';
 
 export class DeviceClientService {
-  private readonly MAGIC_WORD = 'XZYH';
-
   private addressTimeoutInMs = 3 * 1000;
   private socket: Socket;
   private connected = false;
@@ -24,10 +24,12 @@ export class DeviceClientService {
   private currentControlMessageBuilder: {
     bytesToRead: number;
     bytesRead: number;
+    commandId: number;
     messages: { [seqNo: number]: Buffer };
   } = {
     bytesToRead: 0,
     bytesRead: 0,
+    commandId: 0,
     messages: {},
   };
 
@@ -84,15 +86,18 @@ export class DeviceClientService {
     this.sendCommand(commandType, payload);
   }
 
+  public sendCommandWithString(commandType: CommandType, value: string): void {
+    // SET_COMMAND_WITH_STRING_TYPE = msgTypeID == 6
+    const payload = buildStringTypeCommandPayload(value, this.actor);
+    this.sendCommand(commandType, payload);
+  }
+
   private sendCommand(commandType: CommandType, payload: Buffer): void {
     // Command header
     const msgSeqNumber = this.seqNumber++;
-    const dataTypeBuffer = Buffer.from([0xd1, 0x00]);
-    const seqAsBuffer = intToBufferBE(msgSeqNumber, 2);
-    const magicString = Buffer.from(this.MAGIC_WORD);
-    const commandTypeBuffer = intToBufferLE(commandType, 2);
-    const commandHeader = Buffer.concat([dataTypeBuffer, seqAsBuffer, magicString, commandTypeBuffer]);
+    const commandHeader = buildCommandHeader(msgSeqNumber, commandType);
     const data = Buffer.concat([commandHeader, payload]);
+
     console.log(`Sending commandType: ${CommandType[commandType]} (${commandType}) with seqNum: ${msgSeqNumber}...`);
     sendMessage(this.socket, this.address, RequestMessageType.DATA, data);
     // -> NOTE:
@@ -145,7 +150,6 @@ export class DeviceClientService {
       }
       this.seenSeqNo[dataType] = seqNo;
 
-      console.log(`Processing ${dataType} with seq ${seqNo}...`);
       this.sendAck(dataTypeBuffer, seqNo);
       this.handleData(seqNo, dataType, msg);
     } else {
@@ -163,16 +167,31 @@ export class DeviceClientService {
       // Note: data ==== 65430 when there is an error (sending data to a channel which do not exist)
       const commandStr = CommandType[commandId];
       console.log(`DATA package with commandId: ${commandStr} (${commandId}) - data: ${data}`);
+    } else if (dataType === 'BINARY') {
+      this.parseBinaryMessage(seqNo, msg);
     } else {
       console.log(`Data to handle: seqNo: ${seqNo} - dataType: ${dataType} - msg: ${msg.toString('hex')}`);
     }
   }
 
+  private videoBuffer = Buffer.from([]);
+  private parseBinaryMessage(seqNo: number, msg: Buffer): void {
+    // TODO not working yet
+    const firstPartMessage = msg.slice(8, 12).toString() === MAGIC_WORD;
+    if (firstPartMessage) {
+      const payload = msg.slice(24);
+      appendFileSync('test.mp4', payload);
+    }
+  }
+
   private parseDataControlMessage(seqNo: number, msg: Buffer): void {
     // is this the first message?
-    const firstPartMessage = msg.slice(8, 12).toString() === this.MAGIC_WORD;
+    const firstPartMessage = msg.slice(8, 12).toString() === MAGIC_WORD;
 
     if (firstPartMessage) {
+      const commandId = msg.slice(12, 14).readUIntLE(0, 2);
+      this.currentControlMessageBuilder.commandId = commandId;
+
       const bytesToRead = msg.slice(14, 16).readUIntLE(0, 2);
       this.currentControlMessageBuilder.bytesToRead = bytesToRead;
 
@@ -187,21 +206,22 @@ export class DeviceClientService {
     }
 
     if (this.currentControlMessageBuilder.bytesRead >= this.currentControlMessageBuilder.bytesToRead) {
+      const commandId = this.currentControlMessageBuilder.commandId;
       const messages = this.currentControlMessageBuilder.messages;
       // sort by keys
       let completeMessage = Buffer.from([]);
       Object.keys(messages)
-        .sort()
+        .sort() // assure the seqNumbers are in correct order
         .forEach((key: string) => {
           completeMessage = Buffer.concat([completeMessage, messages[parseInt(key)]]);
         });
-      this.currentControlMessageBuilder = { bytesRead: 0, bytesToRead: 0, messages: {} };
-      this.handleDataControl(completeMessage.toString());
+      this.currentControlMessageBuilder = { bytesRead: 0, bytesToRead: 0, commandId: 0, messages: {} };
+      this.handleDataControl(commandId, completeMessage.toString());
     }
   }
 
-  private handleDataControl(message: string) {
-    console.log('DATA - CONTROL ->', message);
+  private handleDataControl(commandId: number, message: string) {
+    console.log(`DATA - CONTROL message with commandId: ${CommandType[commandId]} (${commandId})`, message);
   }
 
   private sendAck(dataType: Buffer, seqNo: number) {
@@ -216,12 +236,16 @@ export class DeviceClientService {
     const DATA = Buffer.from([0xd1, 0x00]);
     const VIDEO = Buffer.from([0xd1, 0x01]);
     const CONTROL = Buffer.from([0xd1, 0x02]);
+    const BINARY = Buffer.from([0xd1, 0x03]);
+
     if (input.compare(DATA) === 0) {
       return 'DATA';
     } else if (input.compare(VIDEO) === 0) {
       return 'VIDEO';
     } else if (input.compare(CONTROL) === 0) {
       return 'CONTROL';
+    } else if (input.compare(BINARY) === 0) {
+      return 'BINARY';
     }
     return 'unknown';
   }
