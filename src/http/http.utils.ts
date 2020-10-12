@@ -16,8 +16,10 @@ export const postRequest = async <T>(
 
   const anyBody = body as any;
   if (anyBody.code !== 0) {
-    throw new Error(`Request failed: ${anyBody.code} - ${anyBody.msg}`);
+    throw new Error(`Request failed: ${url} -> ${anyBody.code} - ${anyBody.msg}`);
   }
+
+  console.log(`url: ${url} -> body: ${JSON.stringify(body)}`);
 
   if (!!anyBody.data) {
     return anyBody.data;

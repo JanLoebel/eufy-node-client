@@ -80,6 +80,12 @@ const mainPush = async () => {
 
   await httpService.pushTokenCheck();
   console.log('Executed push token check');
+
+  setInterval(async () => {
+    await httpService.pushTokenCheck();
+    console.log('Executed push token check...');
+  }, 10 * 1000);
+
   console.log('Ready to listen to push events...');
 };
 
@@ -110,6 +116,6 @@ const mainStartVideoDownload = async () => {
 // mainHttp();
 // mainP2pLocal();
 // mainP2pCloud();
-// mainPush();
-mainReadMultiPackages();
+mainPush();
+// mainReadMultiPackages();
 // mainStartVideoDownload();
