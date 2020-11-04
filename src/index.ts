@@ -104,8 +104,6 @@ const mainPush = async () => {
 
   // Start push client
   const pushClient = await PushClient.init({
-    // androidId: '4451557453194955764',
-    // securityToken: '3738730961415641515',
     androidId: credentials.checkinResponse.androidId,
     securityToken: credentials.checkinResponse.securityToken,
   });
