@@ -64,6 +64,7 @@ const mainP2pLocal = async () => {
   devClientService.sendCommandWithIntString(CommandType.CMD_SET_DEVS_OSD, 1, 0);
 };
 
+/*
 const mainPush = async () => {
   console.log('Starting...');
   const pushService = new PushService();
@@ -87,6 +88,14 @@ const mainPush = async () => {
   }, 10 * 1000);
 
   console.log('Ready to listen to push events...');
+};
+*/
+
+const mainPush = async () => {
+  console.log('Starting...');
+  const pushService = new PushService();
+  const credentials = await pushService.createPushCredentials();
+  console.log('credentials', credentials);
 };
 
 const mainReadMultiPackages = async () => {
