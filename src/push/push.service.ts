@@ -37,7 +37,11 @@ export class PushService {
     return body;
   }
 
-  public async createPushCredentials(): Promise<any> {
+  public async createPushCredentials(): Promise<{
+    fidResponse: FidInstallationResponse;
+    checkinResponse: CheckinResponse;
+    gcmResponse: GcmRegisterResponse;
+  }> {
     const generatedFid = generateFid();
 
     const registerFidResponse = await this.registerFid(generatedFid);
@@ -109,6 +113,7 @@ export class PushService {
 
     const body = response.body;
     if (body.includes('Error=PHONE_REGISTRATION_ERROR')) {
+      console.error('Error ->', response);
       throw new Error(`GCM-Register -> Error=PHONE_REGISTRATION_ERROR`);
     }
 

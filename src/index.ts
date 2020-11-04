@@ -7,6 +7,8 @@ import { PushService } from './push/push.service';
 import { PushMessage } from './push/push.model';
 import { CommandType } from './p2p/command.model';
 import { buildCommandHeader, buildStringTypeCommandPayload } from './p2p/payload.utils';
+import { PushClient } from './push/client.service';
+import { sleep } from './push/push.utils';
 
 // Read from env
 dotenv.config();
@@ -92,10 +94,33 @@ const mainPush = async () => {
 */
 
 const mainPush = async () => {
+  // Register push credentials
   console.log('Starting...');
   const pushService = new PushService();
   const credentials = await pushService.createPushCredentials();
   console.log('credentials', credentials);
+
+  sleep(5 * 1000);
+
+  // Start push client
+  const pushClient = await PushClient.init({
+    // androidId: '4451557453194955764',
+    // securityToken: '3738730961415641515',
+    androidId: credentials.checkinResponse.androidId,
+    securityToken: credentials.checkinResponse.securityToken,
+  });
+  pushClient.connect();
+
+  // register at eufy
+  const fcmToken = credentials.gcmResponse.token;
+  const httpService = new HttpService(USERNAME, PASSWORD);
+  await httpService.registerPushToken(fcmToken);
+  console.log('Registered at eufy with:', fcmToken);
+
+  setInterval(async () => {
+    await httpService.pushTokenCheck();
+    console.log('Executed push token check');
+  }, 10 * 1000);
 };
 
 const mainReadMultiPackages = async () => {

@@ -22,3 +22,8 @@ export interface GcmRegisterResponse {
   fid: string;
   token: string;
 }
+
+export interface Message {
+  tag: number;
+  object: any;
+}
