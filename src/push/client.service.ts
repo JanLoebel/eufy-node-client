@@ -2,6 +2,7 @@
 import { EventEmitter } from 'events';
 import Long from 'long';
 import { load, Root } from 'protobuf-typescript';
+
 import * as tls from 'tls';
 import { Message } from './fid.model';
 import { MessageTag, Parser } from './parser.service';
@@ -70,12 +71,10 @@ export class PushClient extends EventEmitter {
   }
 
   private onSocketData(newData: Buffer) {
-    console.log('onSocketData');
     this.parser.handleData(newData);
   }
 
   private onSocketConnect() {
-    console.log('onSocketConnect');
     this.emit('connect');
   }
 
@@ -90,13 +89,15 @@ export class PushClient extends EventEmitter {
 
   private handleParsedMessage(message: Message) {
     if (message.tag === MessageTag.kLoginResponseTag) {
-      console.log('logged in!');
+      console.log('GCM -> logged in -> waiting for push messages!');
     } else {
       this.handleParsedDataMessage(message);
     }
   }
 
   private handleParsedDataMessage(message: Message) {
-    console.log(message);
+    if (message.tag === MessageTag.kDataMessageStanzaTag) {
+      console.log('Got message:', JSON.stringify(message));
+    }
   }
 }

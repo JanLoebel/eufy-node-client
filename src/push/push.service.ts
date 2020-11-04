@@ -1,9 +1,6 @@
-import { Credentials } from 'push-receiver';
-import { listen as pushReceiverListen } from 'push-receiver';
-import { FCMEufyPushMessage, PushMessage } from './push.model';
-import { buildCheckinRequest, generateFid, parseCheckinResponse } from './push.utils';
-
 import got from 'got';
+
+import { buildCheckinRequest, generateFid, parseCheckinResponse } from './push.utils';
 import { CheckinResponse, FidInstallationResponse, GcmRegisterResponse } from './fid.model';
 
 export class PushService {
@@ -117,29 +114,8 @@ export class PushService {
       throw new Error(`GCM-Register -> Error=PHONE_REGISTRATION_ERROR`);
     }
 
-    const tokenParts = body.split('=')[1].split(':');
     return {
-      rawToken: body,
-      fid: tokenParts[0],
-      token: tokenParts[1],
+      token: body.split('=')[1],
     };
-  }
-
-  public listen(credentials: Credentials, callback: (msg: PushMessage) => void): void {
-    console.log('Registered push receiver with credentials:', credentials);
-    pushReceiverListen(credentials, (msg: FCMEufyPushMessage) => {
-      if (!!msg.notification && !!msg.notification.data && !!msg.notification.data.payload) {
-        const payload = JSON.parse(Buffer.from(msg.notification.data.payload, 'base64').toString());
-        callback({
-          orgMsg: msg,
-          data: {
-            ...msg.notification.data,
-            payload,
-          },
-        });
-      } else {
-        console.error('WARN - Received message without needed information', msg);
-      }
-    });
   }
 }

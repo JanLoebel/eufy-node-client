@@ -18,8 +18,6 @@ export interface CheckinResponse {
 }
 
 export interface GcmRegisterResponse {
-  rawToken: string;
-  fid: string;
   token: string;
 }
 

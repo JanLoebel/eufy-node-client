@@ -66,33 +66,6 @@ const mainP2pLocal = async () => {
   devClientService.sendCommandWithIntString(CommandType.CMD_SET_DEVS_OSD, 1, 0);
 };
 
-/*
-const mainPush = async () => {
-  console.log('Starting...');
-  const pushService = new PushService();
-  const credentials = await pushService.createPushCredentials();
-  pushService.listen(credentials, (msg: PushMessage) => {
-    console.log('push-msg-data:', msg.data);
-  });
-
-  // Register generated token
-  const fcmToken = credentials.fcm.token;
-  const httpService = new HttpService(USERNAME, PASSWORD);
-  await httpService.registerPushToken(fcmToken);
-  console.log('Registered at eufy with:', fcmToken);
-
-  await httpService.pushTokenCheck();
-  console.log('Executed push token check');
-
-  setInterval(async () => {
-    await httpService.pushTokenCheck();
-    console.log('Executed push token check...');
-  }, 10 * 1000);
-
-  console.log('Ready to listen to push events...');
-};
-*/
-
 const mainPush = async () => {
   // Register push credentials
   console.log('Starting...');
@@ -100,7 +73,9 @@ const mainPush = async () => {
   const credentials = await pushService.createPushCredentials();
   console.log('credentials', credentials);
 
-  sleep(5 * 1000);
+  // We have to wait shortly
+  console.log('Wait a short time (5sec)...');
+  await sleep(5 * 1000);
 
   // Start push client
   const pushClient = await PushClient.init({
@@ -109,7 +84,7 @@ const mainPush = async () => {
   });
   pushClient.connect();
 
-  // register at eufy
+  // Register at eufy
   const fcmToken = credentials.gcmResponse.token;
   const httpService = new HttpService(USERNAME, PASSWORD);
   await httpService.registerPushToken(fcmToken);
@@ -117,7 +92,6 @@ const mainPush = async () => {
 
   setInterval(async () => {
     await httpService.pushTokenCheck();
-    console.log('Executed push token check');
   }, 10 * 1000);
 };
 
