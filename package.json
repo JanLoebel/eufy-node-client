@@ -20,12 +20,16 @@
     }
   },
   "nodemonConfig": {
-    "ignore": ["credentials.json"]
+    "ignore": [
+      "credentials.json"
+    ]
   },
   "dependencies": {
     "dgram": "^1.0.1",
     "dotenv": "^8.2.0",
     "got": "^11.5.2",
+    "long": "^4.0.0",
+    "nodemon": "^2.0.6",
     "protobuf-typescript": "^6.8.8"
   },
   "devDependencies": {
