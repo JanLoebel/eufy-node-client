@@ -1,30 +1,36 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { EventEmitter } from 'events';
 import Long from 'long';
+import path from 'path';
 import { load, Root } from 'protobuf-typescript';
-
 import * as tls from 'tls';
-import { Message } from './fid.model';
-import { MessageTag, Parser } from './parser.service';
+
+import { Message, MessageTag } from './fid.model';
+import { PushClientParser } from './push-client-parser.service';
 
 export class PushClient extends EventEmitter {
   private readonly HOST = 'mtalk.google.com';
   private readonly PORT = 5228;
 
   private static proto: Root | null = null;
+  private callback: ((msg: any) => void) | null = null;
 
-  private constructor(private parser: Parser, private auth: { androidId: string; securityToken: string }) {
+  private constructor(
+    private pushClientParser: PushClientParser,
+    private auth: { androidId: string; securityToken: string },
+  ) {
     super();
   }
 
   public static async init(auth: { androidId: string; securityToken: string }): Promise<PushClient> {
-    this.proto = await load('mcs.proto');
-    const parser = await Parser.init();
-    return new PushClient(parser, auth);
+    this.proto = await load(path.join(__dirname, 'mcs.proto'));
+    const pushClientParser = await PushClientParser.init();
+    return new PushClient(pushClientParser, auth);
   }
 
-  public connect(): void {
-    this.parser.on('message', (message) => this.handleParsedMessage(message));
+  public connect(callback: (msg: any) => void): void {
+    this.callback = callback;
+    this.pushClientParser.on('message', (message) => this.handleParsedMessage(message));
 
     const client = tls.connect(this.PORT, this.HOST, {
       rejectUnauthorized: false,
@@ -37,6 +43,10 @@ export class PushClient extends EventEmitter {
 
     client.on('data', (newData) => this.onSocketData(newData));
     client.write(this.buildLoginRequest());
+  }
+
+  public updateCallback(callback: (msg: any) => void): void {
+    this.callback = callback;
   }
 
   private buildLoginRequest(): Buffer {
@@ -71,7 +81,7 @@ export class PushClient extends EventEmitter {
   }
 
   private onSocketData(newData: Buffer) {
-    this.parser.handleData(newData);
+    this.pushClientParser.handleData(newData);
   }
 
   private onSocketConnect() {
@@ -88,7 +98,7 @@ export class PushClient extends EventEmitter {
   }
 
   private handleParsedMessage(message: Message) {
-    if (message.tag === MessageTag.kLoginResponseTag) {
+    if (message.tag === MessageTag.LoginResponse) {
       console.log('GCM -> logged in -> waiting for push messages!');
     } else {
       this.handleParsedDataMessage(message);
@@ -96,8 +106,28 @@ export class PushClient extends EventEmitter {
   }
 
   private handleParsedDataMessage(message: Message) {
-    if (message.tag === MessageTag.kDataMessageStanzaTag) {
-      console.log('Got message:', JSON.stringify(message));
+    if (message.tag === MessageTag.DataMessageStanza) {
+      if (!!this.callback) {
+        this.callback(this.convertPayloadMessage(message));
+      }
     }
+  }
+
+  private convertPayloadMessage(message: Message) {
+    const { appData, ...otherData } = message.object;
+    const messageData: Record<string, any> = {};
+    appData.forEach((kv: { key: string; value: any }) => {
+      if (kv.key === 'payload') {
+        const payload = JSON.parse(Buffer.from(kv.value, 'base64').toString('utf-8'));
+        payload[kv.key] = payload;
+      } else {
+        messageData[kv.key] = kv.value;
+      }
+    });
+
+    return {
+      ...otherData,
+      payload: messageData,
+    };
   }
 }

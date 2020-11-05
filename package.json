@@ -19,6 +19,9 @@
       "pre-commit": "npm run lint:fix"
     }
   },
+  "nodemonConfig": {
+    "ignore": ["credentials.json"]
+  },
   "dependencies": {
     "dgram": "^1.0.1",
     "dotenv": "^8.2.0",

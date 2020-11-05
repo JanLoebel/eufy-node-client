@@ -3,7 +3,7 @@ import got from 'got';
 import { buildCheckinRequest, generateFid, parseCheckinResponse } from './push.utils';
 import { CheckinResponse, FidInstallationResponse, GcmRegisterResponse } from './fid.model';
 
-export class PushService {
+export class PushRegisterService {
   private readonly APP_PACKAGE = 'com.oceanwing.battery.cam';
   private readonly APP_ID = '1:348804314802:android:440a6773b3620da7';
   private readonly APP_SENDER_ID = '348804314802';
@@ -103,14 +103,13 @@ export class PushService {
         info: 'g3EMJXXElLwaQEb1aBJ6XhxiHjPTUxc',
         gcm_ver: '201216023',
         plat: '0',
-        cert: 'F051262F9F99B638F3C76DE349830638555B4A0A',
+        cert: `${this.APP_CERT_SHA1}`,
         target_ver: '28',
       },
     });
 
     const body = response.body;
     if (body.includes('Error=PHONE_REGISTRATION_ERROR')) {
-      console.error('Error ->', response);
       throw new Error(`GCM-Register -> Error=PHONE_REGISTRATION_ERROR`);
     }
 

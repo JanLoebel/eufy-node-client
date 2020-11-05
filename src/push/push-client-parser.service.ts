@@ -1,35 +1,11 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { EventEmitter } from 'events';
+import path from 'path';
 import { BufferReader, load, Root } from 'protobuf-typescript';
 
-export enum ProcessingState {
-  MCS_VERSION_TAG_AND_SIZE = 0,
-  MCS_TAG_AND_SIZE = 1,
-  MCS_SIZE = 2,
-  MCS_PROTO_BYTES = 3,
-}
+import { MessageTag, ProcessingState } from './fid.model';
 
-export enum MessageTag {
-  kHeartbeatPingTag = 0,
-  kHeartbeatAckTag = 1,
-  kLoginRequestTag = 2,
-  kLoginResponseTag = 3,
-  kCloseTag = 4,
-  kMessageStanzaTag = 5,
-  kPresenceStanzaTag = 6,
-  kIqStanzaTag = 7,
-  kDataMessageStanzaTag = 8,
-  kBatchPresenceStanzaTag = 9,
-  kStreamErrorStanzaTag = 10,
-  kHttpRequestTag = 11,
-  kHttpResponseTag = 12,
-  kBindAccountRequestTag = 13,
-  kBindAccountResponseTag = 14,
-  kTalkMetadataTag = 15,
-  kNumProtoTypes = 16,
-}
-
-export class Parser extends EventEmitter {
+export class PushClientParser extends EventEmitter {
   private static proto: Root | null = null;
 
   private state: ProcessingState = ProcessingState.MCS_VERSION_TAG_AND_SIZE;
@@ -44,9 +20,9 @@ export class Parser extends EventEmitter {
     super();
   }
 
-  public static async init(): Promise<Parser> {
-    this.proto = await load('mcs.proto');
-    return new Parser();
+  public static async init(): Promise<PushClientParser> {
+    this.proto = await load(path.join(__dirname, 'mcs.proto'));
+    return new PushClientParser();
   }
 
   handleData(newData: Buffer): void {
@@ -164,7 +140,7 @@ export class Parser extends EventEmitter {
 
     this.emit('message', { tag: this.messageTag, object: object });
 
-    if (this.messageTag === MessageTag.kLoginResponseTag) {
+    if (this.messageTag === MessageTag.LoginResponse) {
       if (this.handshakeComplete) {
         console.error('Unexpected login response');
       } else {
@@ -199,22 +175,22 @@ export class Parser extends EventEmitter {
 
   private buildProtobufFromTag(messageTag: number) {
     switch (messageTag) {
-      case MessageTag.kHeartbeatPingTag:
-        return Parser.proto!.lookupType('mcs_proto.HeartbeatPing');
-      case MessageTag.kHeartbeatAckTag:
-        return Parser.proto!.lookupType('mcs_proto.HeartbeatAck');
-      case MessageTag.kLoginRequestTag:
-        return Parser.proto!.lookupType('mcs_proto.LoginRequest');
-      case MessageTag.kLoginResponseTag:
-        return Parser.proto!.lookupType('mcs_proto.LoginResponse');
-      case MessageTag.kCloseTag:
-        return Parser.proto!.lookupType('mcs_proto.Close');
-      case MessageTag.kIqStanzaTag:
-        return Parser.proto!.lookupType('mcs_proto.IqStanza');
-      case MessageTag.kDataMessageStanzaTag:
-        return Parser.proto!.lookupType('mcs_proto.DataMessageStanza');
-      case MessageTag.kStreamErrorStanzaTag:
-        return Parser.proto!.lookupType('mcs_proto.StreamErrorStanza');
+      case MessageTag.HeartbeatPing:
+        return PushClientParser.proto!.lookupType('mcs_proto.HeartbeatPing');
+      case MessageTag.HeartbeatAck:
+        return PushClientParser.proto!.lookupType('mcs_proto.HeartbeatAck');
+      case MessageTag.LoginRequest:
+        return PushClientParser.proto!.lookupType('mcs_proto.LoginRequest');
+      case MessageTag.LoginResponse:
+        return PushClientParser.proto!.lookupType('mcs_proto.LoginResponse');
+      case MessageTag.Close:
+        return PushClientParser.proto!.lookupType('mcs_proto.Close');
+      case MessageTag.IqStanza:
+        return PushClientParser.proto!.lookupType('mcs_proto.IqStanza');
+      case MessageTag.DataMessageStanza:
+        return PushClientParser.proto!.lookupType('mcs_proto.DataMessageStanza');
+      case MessageTag.StreamErrorStanza:
+        return PushClientParser.proto!.lookupType('mcs_proto.StreamErrorStanza');
       default:
         return null;
     }

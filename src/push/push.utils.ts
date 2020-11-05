@@ -2,6 +2,7 @@ export const VALID_FID_PATTERN = /^[cdef][\w-]{21}$/;
 export const INVALID_FID = 'INVALID';
 
 import { randomBytes } from 'crypto';
+import path from 'path';
 import { load } from 'protobuf-typescript';
 import { CheckinResponse } from './fid.model';
 
@@ -24,7 +25,7 @@ export function generateFid(): string {
 }
 
 export const buildCheckinRequest = async (): Promise<Uint8Array> => {
-  const root = await load('checkin.proto');
+  const root = await load(path.join(__dirname, 'checkin.proto'));
   const CheckinRequestModel = root.lookupType('CheckinRequest');
 
   const payload = {
@@ -59,7 +60,7 @@ export const buildCheckinRequest = async (): Promise<Uint8Array> => {
 };
 
 export const parseCheckinResponse = async (data: Buffer): Promise<CheckinResponse> => {
-  const root = await load('checkin.proto');
+  const root = await load(path.join(__dirname, 'checkin.proto'));
   const CheckinResponseModel = root.lookupType('CheckinResponse');
   const message = CheckinResponseModel.decode(data);
   const object = CheckinResponseModel.toObject(message, {
