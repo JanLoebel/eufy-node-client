@@ -39,7 +39,7 @@ export class PushClient extends EventEmitter {
 
     client.on('connect', () => this.onSocketConnect());
     client.on('close', () => this.onSocketClose());
-    client.on('error', () => this.onSocketError());
+    client.on('error', (error) => this.onSocketError(error));
 
     client.on('data', (newData) => this.onSocketData(newData));
     client.write(this.buildLoginRequest());
@@ -93,8 +93,8 @@ export class PushClient extends EventEmitter {
     this.emit('disconnect');
   }
 
-  private onSocketError() {
-    console.log('onSocketError');
+  private onSocketError(error: any) {
+    console.log('onSocketError: ', error);
   }
 
   private handleParsedMessage(message: Message) {
@@ -119,7 +119,7 @@ export class PushClient extends EventEmitter {
     appData.forEach((kv: { key: string; value: any }) => {
       if (kv.key === 'payload') {
         const payload = JSON.parse(Buffer.from(kv.value, 'base64').toString('utf-8'));
-        payload[kv.key] = payload;
+        messageData[kv.key] = payload;
       } else {
         messageData[kv.key] = kv.value;
       }
