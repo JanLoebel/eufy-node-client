@@ -20,6 +20,17 @@ export class PushClientParser extends EventEmitter {
     super();
   }
 
+  public resetState(): void {
+    this.state = ProcessingState.MCS_VERSION_TAG_AND_SIZE;
+    this.data = Buffer.alloc(0);
+    this.isWaitingForData = true;
+    this.sizePacketSoFar = 0;
+    this.messageSize = 0;
+    this.messageTag = 0;
+    this.handshakeComplete = false;
+    this.removeAllListeners();
+  }
+
   public static async init(): Promise<PushClientParser> {
     this.proto = await load(path.join(__dirname, 'mcs.proto'));
     return new PushClientParser();
@@ -58,6 +69,9 @@ export class PushClientParser extends EventEmitter {
         break;
       case ProcessingState.MCS_PROTO_BYTES:
         this.onGotMessageBytes();
+        break;
+      default:
+        console.log('handleFullMessage: Unknown state: ', this.state);
         break;
     }
   }
