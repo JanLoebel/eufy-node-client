@@ -217,6 +217,7 @@ export class PushClient extends EventEmitter {
       case MessageTag.LoginResponse:
         console.log('handleParsedMessage: Login response: GCM -> logged in -> waiting for push messages!');
         this.loggedIn = true;
+        this.persistentIds = [];
 
         this.heartbeatTimeout = setTimeout(() => {
           this.scheduleHeartbeat(this);
