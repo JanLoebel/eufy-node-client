@@ -1,7 +1,7 @@
 import got from 'got';
 
 import { buildCheckinRequest, generateFid, parseCheckinResponse } from './push.utils';
-import { CheckinResponse, FidInstallationResponse, GcmRegisterResponse } from './fid.model';
+import { CheckinResponse, FidInstallationResponse, FidTokenResponse, GcmRegisterResponse } from './fid.model';
 
 export class PushRegisterService {
   private readonly APP_PACKAGE = 'com.oceanwing.battery.cam';
@@ -10,6 +10,7 @@ export class PushRegisterService {
   private readonly APP_CERT_SHA1 = 'F051262F9F99B638F3C76DE349830638555B4A0A';
   private readonly FCM_PROJECT_ID = 'batterycam-3250a';
   private readonly GOOGLE_API_KEY = 'AIzaSyCSz1uxGrHXsEktm7O3_wv-uLGpC9BvXR8';
+  private readonly AUTH_VERSION = 'FIS_v2';
 
   public async registerFid(fid: string): Promise<FidInstallationResponse> {
     const url = `https://firebaseinstallations.googleapis.com/v1/projects/${this.FCM_PROJECT_ID}/installations`;
@@ -17,7 +18,7 @@ export class PushRegisterService {
     const data = {
       fid: fid,
       appId: `${this.APP_ID}`,
-      authVersion: 'FIS_v2',
+      authVersion: `${this.AUTH_VERSION}`,
       sdkVersion: 'a:16.3.1',
     };
 
@@ -27,6 +28,22 @@ export class PushRegisterService {
         'X-Android-Package': `${this.APP_PACKAGE}`,
         'X-Android-Cert': `${this.APP_CERT_SHA1}`,
         'x-goog-api-key': `${this.GOOGLE_API_KEY}`,
+      },
+      responseType: 'json',
+    });
+
+    return body;
+  }
+
+  public async renewFidToken(fid: string, refresh_token: string): Promise<FidTokenResponse> {
+    const url = `https://firebaseinstallations.googleapis.com/v1/projects/${this.FCM_PROJECT_ID}/installations/${fid}/authTokens:generate`;
+
+    const { body } = await got.post<FidTokenResponse>(url, {
+      headers: {
+        'X-Android-Package': `${this.APP_PACKAGE}`,
+        'X-Android-Cert': `${this.APP_CERT_SHA1}`,
+        'x-goog-api-key': `${this.GOOGLE_API_KEY}`,
+        Authorization: `${this.AUTH_VERSION} ${refresh_token}`,
       },
       responseType: 'json',
     });

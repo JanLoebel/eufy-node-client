@@ -1,11 +1,13 @@
+export interface FidTokenResponse {
+  token: string;
+  expiresIn: string;
+}
+
 export interface FidInstallationResponse {
   name: string;
   fid: string;
   refreshToken: string;
-  authToken: {
-    token: string;
-    expiresIn: string;
-  };
+  authToken: FidTokenResponse;
 }
 
 export interface CheckinResponse {
