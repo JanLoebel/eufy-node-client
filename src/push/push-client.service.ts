@@ -11,8 +11,7 @@ import { PushClientParser } from './push-client-parser.service';
 export class PushClient extends EventEmitter {
   private readonly HOST = 'mtalk.google.com';
   private readonly PORT = 5228;
-  private readonly MCSVERSION = 41;
-
+  private readonly MCS_VERSION = 41;
   private readonly HEARTBEAT_INTERVAL = 5 * 60 * 1000;
 
   private loggedIn = false;
@@ -22,8 +21,7 @@ export class PushClient extends EventEmitter {
   private client?: tls.TLSSocket;
   private heartbeatTimeout?: NodeJS.Timeout;
   private reconnectTimeout?: NodeJS.Timeout;
-
-  private persistentIds: string[] = [];
+  private persistentIds: Array<string> = [];
 
   private static proto: Root | null = null;
   private callback: ((msg: any) => void) | null = null;
@@ -41,14 +39,11 @@ export class PushClient extends EventEmitter {
     return new PushClient(pushClientParser, auth);
   }
 
-  public getCallback(): ((msg: any) => void) | null {
-    return this.callback;
-  }
-
   private initialize() {
     this.loggedIn = false;
     this.streamId = 0;
     this.lastStreamIdReported = -1;
+
     if (this.client) {
       this.client.removeAllListeners();
       this.client.destroy();
@@ -62,15 +57,15 @@ export class PushClient extends EventEmitter {
     }
   }
 
-  public getPersistentIds(): string[] {
-    return this.persistentIds;
-  }
-
-  public setPersistentIds(ids: string[]): void {
+  public setPersistentIds(ids: Array<string>): void {
     this.persistentIds = ids;
   }
 
-  public connect(callback?: (msg: any) => void): void {
+  public connect(callback?: (msg: any) => void, persistentIds?: Array<string>): void {
+    if (!!persistentIds) {
+      this.setPersistentIds(persistentIds);
+    }
+
     this.initialize();
 
     if (callback) this.callback = callback;
@@ -123,54 +118,45 @@ export class PushClient extends EventEmitter {
     }
 
     const buffer = LoginRequestType.encodeDelimited(loginRequest).finish();
-    return Buffer.concat([Buffer.from([this.MCSVERSION, MessageTag.LoginRequest]), buffer]);
+    return Buffer.concat([Buffer.from([this.MCS_VERSION, MessageTag.LoginRequest]), buffer]);
   }
 
   private buildHeartbeatPingRequest(stream_id: number | undefined): Buffer {
-    const HeatbeatPingRequestType = PushClient.proto!.lookupType('mcs_proto.HeartbeatPing');
-    let heartbeatPingRequest = {};
-
+    const heartbeatPingRequest: Record<string, any> = {};
     if (stream_id) {
-      heartbeatPingRequest = {
-        last_stream_id_received: stream_id,
-      };
+      heartbeatPingRequest.last_stream_id_received = stream_id;
     }
+
     console.log('buildHeartbeatPingRequest: heartbeatPingRequest: ', JSON.stringify(heartbeatPingRequest));
-    const errorMessage = HeatbeatPingRequestType.verify(heartbeatPingRequest);
+    const HeartbeatPingRequestType = PushClient.proto!.lookupType('mcs_proto.HeartbeatPing');
+    const errorMessage = HeartbeatPingRequestType.verify(heartbeatPingRequest);
     if (errorMessage) {
       throw new Error(errorMessage);
     }
 
-    const buffer = HeatbeatPingRequestType.encodeDelimited(heartbeatPingRequest).finish();
+    const buffer = HeartbeatPingRequestType.encodeDelimited(heartbeatPingRequest).finish();
     return Buffer.concat([Buffer.from([MessageTag.HeartbeatPing]), buffer]);
   }
 
   private buildHeartbeatAckRequest(stream_id?: number, status?: number): Buffer {
-    const HeatbeatAckRequestType = PushClient.proto!.lookupType('mcs_proto.HeartbeatAck');
-    let heartbeatAckRequest = {};
-
+    const heartbeatAckRequest: Record<string, any> = {};
     if (stream_id && !status) {
-      heartbeatAckRequest = {
-        last_stream_id_received: stream_id,
-      };
+      heartbeatAckRequest.last_stream_id_received = stream_id;
     } else if (!stream_id && status) {
-      heartbeatAckRequest = {
-        status: status,
-      };
+      heartbeatAckRequest.status = status;
     } else {
-      heartbeatAckRequest = {
-        last_stream_id_received: stream_id,
-        status: status,
-      };
+      heartbeatAckRequest.last_stream_id_received = stream_id;
+      heartbeatAckRequest.status = status;
     }
     console.log('buildHeartbeatAckRequest: heartbeatAckRequest: ', JSON.stringify(heartbeatAckRequest));
 
-    const errorMessage = HeatbeatAckRequestType.verify(heartbeatAckRequest);
+    const HeartbeatAckRequestType = PushClient.proto!.lookupType('mcs_proto.HeartbeatAck');
+    const errorMessage = HeartbeatAckRequestType.verify(heartbeatAckRequest);
     if (errorMessage) {
       throw new Error(errorMessage);
     }
 
-    const buffer = HeatbeatAckRequestType.encodeDelimited(heartbeatAckRequest).finish();
+    const buffer = HeartbeatAckRequestType.encodeDelimited(heartbeatAckRequest).finish();
     return Buffer.concat([Buffer.from([MessageTag.HeartbeatAck]), buffer]);
   }
 
@@ -221,7 +207,7 @@ export class PushClient extends EventEmitter {
 
         this.heartbeatTimeout = setTimeout(() => {
           this.scheduleHeartbeat(this);
-        }, this.getHeartbeatInterval());
+        }, this.HEARTBEAT_INTERVAL);
         break;
       case MessageTag.LoginRequest:
         console.log('handleParsedMessage: Login request: message: ', JSON.stringify(message));
@@ -272,26 +258,26 @@ export class PushClient extends EventEmitter {
     };
   }
 
-  public getStreamId(): number {
+  private getStreamId(): number {
     this.lastStreamIdReported = this.streamId;
     return this.streamId;
   }
 
-  public newStreamIdAvailable(): boolean {
+  private newStreamIdAvailable(): boolean {
     return this.lastStreamIdReported != this.streamId;
   }
 
-  public scheduleHeartbeat(client: PushClient): void {
+  private scheduleHeartbeat(client: PushClient): void {
     if (client.sendHeartbeat()) {
       this.heartbeatTimeout = setTimeout(() => {
         this.scheduleHeartbeat(client);
-      }, client.getHeartbeatInterval());
+      }, client.HEARTBEAT_INTERVAL);
     } else {
       console.log('scheduleHeartbeat: disabled!');
     }
   }
 
-  public sendHeartbeat(): boolean {
+  private sendHeartbeat(): boolean {
     let streamId = undefined;
     const status = undefined;
     if (this.newStreamIdAvailable()) {
@@ -313,27 +299,23 @@ export class PushClient extends EventEmitter {
     return this.loggedIn;
   }
 
-  public getHeartbeatInterval(): number {
-    return this.HEARTBEAT_INTERVAL;
-  }
-
-  public getCurrentDelay(): number {
+  private getCurrentDelay(): number {
     const delay = this.currentDelay == 0 ? 5000 : this.currentDelay;
     if (this.currentDelay < 60000) this.currentDelay += 10000;
     if (this.currentDelay >= 60000 && this.currentDelay < 600000) this.currentDelay += 60000;
     return delay;
   }
 
-  public resetCurrentDelay(): void {
+  private resetCurrentDelay(): void {
     this.currentDelay = 0;
   }
 
-  public scheduleReconnect(): void {
+  private scheduleReconnect(): void {
     const delay = this.getCurrentDelay();
     console.log('scheduleReconnect: delay: ', delay);
     if (!this.reconnectTimeout)
       this.reconnectTimeout = setTimeout(() => {
         this.connect();
-      }, this.getCurrentDelay());
+      }, delay);
   }
 }

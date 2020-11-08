@@ -1,27 +1,24 @@
-export const VALID_FID_PATTERN = /^[cdef][\w-]{21}$/;
-export const INVALID_FID = 'INVALID';
-
 import { randomBytes } from 'crypto';
 import path from 'path';
 import { load } from 'protobuf-typescript';
 import { CheckinResponse } from './fid.model';
 
+export const VALID_FID_PATTERN = /^[cdef][\w-]{21}$/;
+
 export function generateFid(): string {
-  try {
-    const fidByteArray = new Uint8Array(17);
-    fidByteArray.set(randomBytes(fidByteArray.length));
+  const fidByteArray = new Uint8Array(17);
+  fidByteArray.set(randomBytes(fidByteArray.length));
 
-    // Replace the first 4 random bits with the constant FID header of 0b0111.
-    fidByteArray[0] = 0b01110000 + (fidByteArray[0] % 0b00010000);
+  // Replace the first 4 random bits with the constant FID header of 0b0111.
+  fidByteArray[0] = 0b01110000 + (fidByteArray[0] % 0b00010000);
 
-    const b64 = Buffer.from(fidByteArray).toString('base64');
-    const b64_safe = b64.replace(/\+/g, '-').replace(/\//g, '_');
-    const fid = b64_safe.substr(0, 22);
-    return VALID_FID_PATTERN.test(fid) ? fid : INVALID_FID;
-  } catch {
-    // FID generation errored
-    return INVALID_FID;
+  const b64 = Buffer.from(fidByteArray).toString('base64');
+  const b64_safe = b64.replace(/\+/g, '-').replace(/\//g, '_');
+  const fid = b64_safe.substr(0, 22);
+  if (VALID_FID_PATTERN.test(fid)) {
+    return fid;
   }
+  throw new Error(`Generated FID is invalid?!`);
 }
 
 export const buildCheckinRequest = async (): Promise<Uint8Array> => {

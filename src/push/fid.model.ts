@@ -1,6 +1,7 @@
 export interface FidTokenResponse {
   token: string;
   expiresIn: string;
+  expiresAt: number;
 }
 
 export interface FidInstallationResponse {

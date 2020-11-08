@@ -127,9 +127,6 @@ export class PushClientParser extends EventEmitter {
 
   private onGotMessageBytes(): void {
     const protobuf = this.buildProtobufFromTag(this.messageTag);
-    if (!protobuf) {
-      throw new Error('Unknown tag');
-    }
 
     if (this.messageSize === 0) {
       this.emit('message', { tag: this.messageTag, object: {} });
@@ -182,9 +179,9 @@ export class PushClientParser extends EventEmitter {
         return this.sizePacketSoFar + 1;
       case ProcessingState.MCS_PROTO_BYTES:
         return this.messageSize;
+      default:
+        throw new Error(`Unknown state: ${this.state}`);
     }
-
-    throw new Error(`Unknown state: ${this.state}`);
   }
 
   private buildProtobufFromTag(messageTag: number) {
@@ -206,7 +203,7 @@ export class PushClientParser extends EventEmitter {
       case MessageTag.StreamErrorStanza:
         return PushClientParser.proto!.lookupType('mcs_proto.StreamErrorStanza');
       default:
-        return null;
+        throw new Error(`Unknown tag: ${this.messageTag}`);
     }
   }
 }

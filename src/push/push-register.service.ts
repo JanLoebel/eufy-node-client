@@ -32,7 +32,22 @@ export class PushRegisterService {
       responseType: 'json',
     });
 
-    return body;
+    return {
+      ...body,
+      authToken: {
+        ...body.authToken,
+        expiresAt: this.buildExpiresAt(body.authToken.expiresIn),
+      },
+    };
+  }
+
+  private buildExpiresAt(expiresIn: string): number {
+    if (expiresIn.endsWith('ms')) {
+      return new Date().getTime() + Number.parseInt(expiresIn.substring(0, expiresIn.length - 2));
+    } else if (expiresIn.endsWith('s')) {
+      return new Date().getTime() + Number.parseInt(expiresIn.substring(0, expiresIn.length - 1)) * 1000;
+    }
+    throw new Error(`Unknown expiresIn-format: ${expiresIn}`);
   }
 
   public async renewFidToken(fid: string, refresh_token: string): Promise<FidTokenResponse> {
