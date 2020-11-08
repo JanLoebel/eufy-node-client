@@ -23,6 +23,8 @@ export class PushClient extends EventEmitter {
   private heartbeatTimeout?: NodeJS.Timeout;
   private reconnectTimeout?: NodeJS.Timeout;
 
+  private persistentIds: string[] = [];
+
   private static proto: Root | null = null;
   private callback: ((msg: any) => void) | null = null;
 
@@ -58,6 +60,14 @@ export class PushClient extends EventEmitter {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = undefined;
     }
+  }
+
+  public getPersistentIds(): string[] {
+    return this.persistentIds;
+  }
+
+  public setPersistentIds(ids: string[]): void {
+    this.persistentIds = ids;
   }
 
   public connect(callback?: (msg: any) => void): void {
@@ -104,7 +114,7 @@ export class PushClient extends EventEmitter {
       useRmq2: true,
       setting: [{ name: 'new_vc', value: '1' }],
       clientEvent: [],
-      receivedPersistentId: [],
+      receivedPersistentId: this.persistentIds,
     };
 
     const errorMessage = LoginRequestType.verify(loginRequest);
@@ -176,14 +186,13 @@ export class PushClient extends EventEmitter {
     console.log('onSocketClose');
     this.loggedIn = false;
     if (this.heartbeatTimeout) clearTimeout(this.heartbeatTimeout);
+    this.scheduleReconnect();
 
     this.emit('disconnect');
   }
 
   private onSocketError(error: any) {
     console.log('onSocketError: ', error);
-
-    this.scheduleReconnect();
   }
 
   private handleParsedMessage(message: Message) {
@@ -191,6 +200,7 @@ export class PushClient extends EventEmitter {
     switch (message.tag) {
       case MessageTag.DataMessageStanza:
         console.log('handleParsedMessage: DataMessageStanza: message: ', JSON.stringify(message));
+        if (message.object && message.object.persistentId) this.persistentIds.push(message.object.persistentId);
         if (!!this.callback) {
           this.callback(this.convertPayloadMessage(message));
         }
@@ -203,11 +213,11 @@ export class PushClient extends EventEmitter {
         break;
       case MessageTag.Close:
         console.log('handleParsedMessage: Close: Server requested close! message: ', JSON.stringify(message));
-        this.scheduleReconnect();
         break;
       case MessageTag.LoginResponse:
         console.log('handleParsedMessage: Login response: GCM -> logged in -> waiting for push messages!');
         this.loggedIn = true;
+        this.persistentIds = [];
 
         this.heartbeatTimeout = setTimeout(() => {
           this.scheduleHeartbeat(this);
