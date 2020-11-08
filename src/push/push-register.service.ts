@@ -50,7 +50,7 @@ export class PushRegisterService {
     throw new Error(`Unknown expiresIn-format: ${expiresIn}`);
   }
 
-  public async renewFidToken(fid: string, refresh_token: string): Promise<FidTokenResponse> {
+  public async renewFidToken(fid: string, refreshToken: string): Promise<FidTokenResponse> {
     const url = `https://firebaseinstallations.googleapis.com/v1/projects/${this.FCM_PROJECT_ID}/installations/${fid}/authTokens:generate`;
 
     const { body } = await got.post<FidTokenResponse>(url, {
@@ -58,12 +58,15 @@ export class PushRegisterService {
         'X-Android-Package': `${this.APP_PACKAGE}`,
         'X-Android-Cert': `${this.APP_CERT_SHA1}`,
         'x-goog-api-key': `${this.GOOGLE_API_KEY}`,
-        Authorization: `${this.AUTH_VERSION} ${refresh_token}`,
+        Authorization: `${this.AUTH_VERSION} ${refreshToken}`,
       },
       responseType: 'json',
     });
 
-    return body;
+    return {
+      ...body,
+      expiresAt: this.buildExpiresAt(body.expiresIn),
+    };
   }
 
   public async createPushCredentials(): Promise<{
