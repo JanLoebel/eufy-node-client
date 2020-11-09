@@ -6,6 +6,9 @@ Other repositories:
 - [https://github.com/FuzzyMistborn/python-eufy-security](https://github.com/FuzzyMistborn/python-eufy-security)
 - [https://github.com/fbertone/lib32100](https://github.com/fbertone/lib32100)
 
+## Getting started
+To see how to get started with the `eufy-node-client` visit the example-project: [https://github.com/JanLoebel/eufy-node-client-examples](https://github.com/JanLoebel/eufy-node-client-examples)
+
 ### Contributors
 Many thanks goes to all people helping this project:
 - [@bropat](https://github.com/bropat)
