@@ -1,6 +1,6 @@
 {
   "name": "eufy-node-client",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Eufy Security Client in node (typescript).",
   "main": "build/index.js",
   "types": "build/index.d.ts",
