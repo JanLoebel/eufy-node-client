@@ -6,6 +6,10 @@ Other repositories:
 - [https://github.com/FuzzyMistborn/python-eufy-security](https://github.com/FuzzyMistborn/python-eufy-security)
 - [https://github.com/fbertone/lib32100](https://github.com/fbertone/lib32100)
 
+### Contributors
+Many thanks goes to all people helping this project:
+- [@bropat](https://github.com/bropat)
+
 ### Notes:
 -> After sending Data like setting Guard Mode to Home, we get a control message only if the status was something else before. So Home -> Home is not returning any control packet.
 
