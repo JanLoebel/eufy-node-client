@@ -1,12 +1,14 @@
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+
 import { HttpService } from './http/http.service';
 import { CloudLookupService } from './p2p/cloud-lookup.service';
 import { LocalLookupService } from './p2p/local-lookup.service';
 import { DeviceClientService } from './p2p/device-client.service';
-import { PushService } from './push/push.service';
-import { PushMessage } from './push/push.model';
+import { PushRegisterService } from './push/push-register.service';
 import { CommandType } from './p2p/command.model';
-import { buildCommandHeader, buildStringTypeCommandPayload } from './p2p/payload.utils';
+import { PushClient } from './push/push-client.service';
+import { sleep } from './push/push.utils';
 
 // Read from env
 dotenv.config();
@@ -66,27 +68,43 @@ const mainP2pLocal = async () => {
 
 const mainPush = async () => {
   console.log('Starting...');
-  const pushService = new PushService();
-  const credentials = await pushService.createPushCredentials();
-  pushService.listen(credentials, (msg: PushMessage) => {
-    console.log('push-msg-data:', msg.data);
+
+  let credentials = null;
+  // Check if credentials are existing
+  if (fs.existsSync('credentials.json')) {
+    console.log('Credentials found -> reusing them...');
+    credentials = JSON.parse(fs.readFileSync('credentials.json').toString());
+  } else {
+    // Register push credentials
+    console.log('No credentials found -> register new...');
+    const pushService = new PushRegisterService();
+    credentials = await pushService.createPushCredentials();
+    // Store credentials
+    fs.writeFileSync('credentials.json', JSON.stringify(credentials));
+
+    // We have to wait shortly to give google some time to process the registration
+    console.log('Wait a short time (5sec)...');
+    await sleep(5 * 1000);
+  }
+
+  // Start push client
+  const pushClient = await PushClient.init({
+    androidId: credentials.checkinResponse.androidId,
+    securityToken: credentials.checkinResponse.securityToken,
+  });
+  pushClient.connect((msg: any) => {
+    console.log('Got push message:', msg);
   });
 
-  // Register generated token
-  const fcmToken = credentials.fcm.token;
+  // Register at eufy
+  const fcmToken = credentials.gcmResponse.token;
   const httpService = new HttpService(USERNAME, PASSWORD);
   await httpService.registerPushToken(fcmToken);
   console.log('Registered at eufy with:', fcmToken);
 
-  await httpService.pushTokenCheck();
-  console.log('Executed push token check');
-
   setInterval(async () => {
     await httpService.pushTokenCheck();
-    console.log('Executed push token check...');
-  }, 10 * 1000);
-
-  console.log('Ready to listen to push events...');
+  }, 30 * 1000);
 };
 
 const mainReadMultiPackages = async () => {
