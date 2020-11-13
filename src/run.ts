@@ -13,7 +13,6 @@ const PASSWORD = process.env.PASSWORD as string;
 const DSK_KEY = process.env.DSK_KEY as string;
 const P2P_DID = process.env.P2P_DID as string;
 const ACTOR_ID = process.env.ACTOR_ID as string;
-const STATION_SN = process.env.STATION_SN as string;
 
 const mainP2pCloud = async () => {
   const lookupService = new CloudLookupService();
@@ -23,21 +22,6 @@ const mainP2pCloud = async () => {
   } catch (err) {
     console.error('Not found any address...', err);
   }
-};
-
-const mainP2pLocal = async () => {
-  const lookupService = new LocalLookupService();
-  const address = await lookupService.lookup('192.168.68.101');
-  console.log('Found address', address);
-
-  const devClientService = new DeviceClientService(address, P2P_DID, ACTOR_ID);
-  await devClientService.connect();
-
-  // CMD_SET_ARMING  # 0 => away 1 => home, 2 => schedule, 63 => disarmed
-  devClientService.sendCommandWithInt(CommandType.CMD_SET_ARMING, 1);
-
-  // CMD_SET_DEVS_OSD # 1 => disabled # 2 => enable
-  devClientService.sendCommandWithIntString(CommandType.CMD_SET_DEVS_OSD, 1, 0);
 };
 
 const mainPush = async () => {
@@ -105,7 +89,6 @@ const mainStartVideoDownload = async () => {
   devClientService.sendCommandWithString(CommandType.CMD_DOWNLOAD_VIDEO, fileName);
 };
 
-// mainHttp();
 // mainP2pLocal();
 // mainP2pCloud();
 // mainPush();

@@ -2,6 +2,7 @@
 import { EventEmitter } from 'events';
 import path from 'path';
 import { BufferReader, load, Root } from 'protobuf-typescript';
+import { LOG } from '../utils/logging';
 
 import { MessageTag, ProcessingState } from './fid.model';
 
@@ -71,7 +72,7 @@ export class PushClientParser extends EventEmitter {
         this.onGotMessageBytes();
         break;
       default:
-        console.log('handleFullMessage: Unknown state: ', this.state);
+        LOG('handleFullMessage: Unknown state: ', this.state);
         break;
     }
   }

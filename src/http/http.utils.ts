@@ -1,4 +1,5 @@
 import got from 'got';
+import { LOG } from '../utils/logging';
 
 export const postRequest = async <T>(
   url: string,
@@ -19,7 +20,7 @@ export const postRequest = async <T>(
     throw new Error(`Request failed: ${url} -> ${anyBody.code} - ${anyBody.msg}`);
   }
 
-  // console.log(`url: ${url} -> body: ${JSON.stringify(body)}`);
+  LOG(`url: ${url} -> body: ${JSON.stringify(body)}`);
 
   if (!!anyBody.data) {
     return anyBody.data;
