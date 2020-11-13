@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon src/run.ts",
-    "build": "tsc --project ./",
+    "build": "tsc --project ./ && npm run copy-proto-build",
+    "copy-proto-build": "npx copyfiles -u 1 \"src/**/*.proto\" build",
     "lint": "eslint 'src/**/*.{js,ts}'",
     "lint:fix": "eslint 'src/**/*.{js,ts}' --fix",
     "check:version": "npx npm-check-updates",
