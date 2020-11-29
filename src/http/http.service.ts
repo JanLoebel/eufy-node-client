@@ -123,8 +123,13 @@ export class HttpService {
   private async login(email: string, password: string): Promise<LoginResult> {
     const result = await postRequest<LoginResult>(`${this.baseUrl}/passport/login`, { email, password });
     if (!!result.domain) {
-      this.baseUrl = `https://${result.domain}/v1`;
-      return this.login(email, password);
+      const baseUrlFromResult = `https://${result.domain}/v1`;
+
+      if (baseUrlFromResult !== this.baseUrl) {
+        // Only recall login if we're not already on the returned domain
+        this.baseUrl = baseUrlFromResult;
+        return this.login(email, password);
+      }
     }
 
     return result;
