@@ -104,7 +104,7 @@ const intToArray = (inp: string | number): Array<number> => {
 
 export const intToBufferBE = (inp: string | number, bufferLength: number | null = null): Buffer => {
   const array = intToArray(inp);
-  return Buffer.from(applyLength(array, bufferLength));
+  return Buffer.from(applyLength(array, bufferLength, true));
 };
 
 export const intToBufferLE = (inp: string | number, bufferLength: number | null = null): Buffer => {
@@ -113,13 +113,15 @@ export const intToBufferLE = (inp: string | number, bufferLength: number | null 
   return Buffer.from(applyLength(array, bufferLength));
 };
 
-const applyLength = (inp: Array<number>, bufferLength: number | null = null): Array<number> => {
+const applyLength = (inp: Array<number>, bufferLength: number | null = null, bigendian = false): Array<number> => {
   if (!bufferLength) {
     return inp;
   }
 
-  if (bufferLength < inp.length) {
+  if (bufferLength < inp.length && !bigendian) {
     return inp.slice(0, bufferLength);
+  } else if (bufferLength < inp.length && bigendian) {
+    return inp.slice(inp.length - bufferLength);
   } else if (bufferLength > inp.length) {
     for (let i = 0; i <= bufferLength - inp.length; i++) {
       inp.push(0);
