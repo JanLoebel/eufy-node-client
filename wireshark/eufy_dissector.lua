@@ -351,6 +351,87 @@ commandIds = {
   [2111] = "CMD_SUB1G_REP_UNPLUG_POWER_LINE",
 }
 
+errorCodes = {
+  [-304] = "ERROR_BIND_CLIENT_SOCKET_CREATE_FAIL",
+  [-307] = "ERROR_BIND_CLIENT_SOCKET_RECEIVE_LEN_ERROR",
+  [-306] = "ERROR_BIND_CLIENT_SOCKET_RECEIVE_TIMEOUT",
+  [-305] = "ERROR_BIND_CLIENT_SOCKET_SEND_FAIL",
+  [-309] = "ERROR_BIND_COMMAND_ERROR",
+  [-308] = "ERROR_BIND_PARAM_NULL",
+  [-303] = "ERROR_BROADCAST_RECEIVE_SN_NULL",
+  [-302] = "ERROR_BROADCAST_RECEIVE_TIME_OUT",
+  [-300] = "ERROR_BROADCAST_START_ALREADY_RUNNING",
+  [-301] = "ERROR_BROADCAST_STOP_SOCKET_FD_ERROR",
+  [-143] = "ERROR_CLOSE_HOMEKIT",
+  [-133] = "ERROR_COMMAND_TIMEOUT",
+  [-134] = "ERROR_CONNECT_TIMEOUT",
+  [-114] = "ERROR_DEV_BUSY",
+  [-128] = "ERROR_DEV_CLOSE",
+  [-109] = "ERROR_DEV_OFFLINE",
+  [-113] = "ERROR_DEV_UPDATEING",
+  [-120] = "ERROR_GET_EXEC_RESULT",
+  [-101] = "ERROR_HAVE_CONNECT",
+  [-121] = "ERROR_HIGHT_TEMPERATURE",
+  [-125] = "ERROR_HUB_NON_ADMIN",
+  [-112] = "ERROR_HUB_UPDATEING",
+  [-104] = "ERROR_INVALID_ACCOUNT",
+  [-103] = "ERROR_INVALID_COMMAND",
+  [-110] = "ERROR_INVALID_PARAM",
+  [-107] = "ERROR_INVALID_PARAM_LEN",
+  [-123] = "ERROR_MAX_DEV_CONNECT_NUM",
+  [-102] = "ERROR_MAX_HUB_CONNECT_NUM",
+  [-130] = "ERROR_MAX_NAS_CONNECT_NUM",
+  [-129] = "ERROR_MODE_DISABLE",
+  [998] = "ERROR_NETWORK_NOT_AVAILABLE",
+  [-115] = "ERROR_NOT_FACE",
+  [-106] = "ERROR_NOT_FIND_DEV",
+  [-118] = "ERROR_NOT_TFCARD",
+  [-100] = "ERROR_NULL_POINT",
+  [-111] = "ERROR_OPEN_FILE_FAIL",
+  [-116] = "ERROR_PARAM_NO_CHANGE",
+  [-124] = "ERROR_PIPE_FAIL",
+  [-127] = "ERROR_PLAY_STOP",
+  [-117] = "ERROR_POWER_LOW",
+  [-2] = "ERROR_PPCS_ALREADY_INITIALIZED",
+  [-126] = "ERROR_PPCS_CONNECTING",
+  [-6] = "ERROR_PPCS_DEVICE_NOT_ONLINE",
+  [-22] = "ERROR_PPCS_FAIL_TO_CREATE_THREAD",
+  [-7] = "ERROR_PPCS_FAIL_TO_RESOLVE_NAME",
+  [-9] = "ERROR_PPCS_ID_OUT_OF_DATE",
+  [-21] = "ERROR_PPCS_INVALID_APILICENSE",
+  [-23] = "ERROR_PPCS_INVALID_DSK",
+  [-4] = "ERROR_PPCS_INVALID_ID",
+  [-5] = "ERROR_PPCS_INVALID_PARAMETER",
+  [-8] = "ERROR_PPCS_INVALID_PREFIX",
+  [-11] = "ERROR_PPCS_INVALID_SESSION_HANDLE",
+  [-17] = "ERROR_PPCS_MAX_SESSION",
+  [-1] = "ERROR_PPCS_NOT_INITIALIZED",
+  [-10] = "ERROR_PPCS_NO_RELAY_SERVER_AVAILABLE",
+  [1] = "ERROR_PPCS_RELAY",
+  [-15] = "ERROR_PPCS_REMOTE_SITE_BUFFER_FULL",
+  [-14] = "ERROR_PPCS_SESSION_CLOSED_CALLED",
+  [-20] = "ERROR_PPCS_SESSION_CLOSED_INSUFFICIENT_MEMORY",
+  [-12] = "ERROR_PPCS_SESSION_CLOSED_REMOTE",
+  [-13] = "ERROR_PPCS_SESSION_CLOSED_TIMEOUT",
+  [0] = "ERROR_PPCS_SUCCESSFUL",
+  [-3] = "ERROR_PPCS_TIME_OUT",
+  [-18] = "ERROR_PPCS_UDP_PORT_BIND_FAILED",
+  [-19] = "ERROR_PPCS_USER_CONNECT_BREAK",
+  [-16] = "ERROR_PPCS_USER_LISTEN_BREAK",
+  [-122] = "ERROR_SET_P2P_INFO",
+  [20020] = "ERROR_STATION_HAS_BIND",
+  [-119] = "ERROR_TFCARD_FORMATING",
+  [-135] = "ERROR_TFCARD_REPAIRING",
+  [-132] = "ERROR_TFCARD_VOLUME_OVERFLOW",
+  [-108] = "ERROR_WAIT_TIMEOUT",
+  [-131] = "ERROR_WAKEUP_CAMRA_TYPE",
+  [-105] = "ERROR_WRITE_FLASH",
+  [-200] = "ERROR_XM_BASE",
+  [-203] = "ERROR_XM_WIFI_DISCONNECT",
+  [-205] = "ERROR_XM_WIFI_TIMEOUT",
+  [-204] = "ERROR_XM_WIFI_WAKEUP_FAIL",
+}
+
 -- helper method
 local function has_value (tab, val)
   for index, value in ipairs(tab) do
@@ -381,6 +462,8 @@ local F_p2pSeqNo = ProtoField.new("P2P SeqNo", "eufySecurity.p2pSeqNo", ftypes.U
 local F_p2pDataType = ProtoField.new("P2P DataType", "eufySecurity.p2pDataType", ftypes.STRING, nil, nil, nil, "TODO")
 local F_p2pDataCommandId = ProtoField.new("P2P Data Command Id", "eufySecurity.p2pCommandId", ftypes.STRING, nil, nil, nil, "TODO")
 local F_p2pAckSeqNo = ProtoField.new("P2P Ack SeqNumbers", "eufySecurity.p2pAckSeqNos", ftypes.STRING, nil, nil, nil, "TODO")
+local F_p2pAckSeqNoCount = ProtoField.new("P2P Ack SeqNumbers Count", "eufySecurity.p2pAckSeqNosCount", ftypes.UINT16, nil, nil, nil, "TODO")
+local F_p2pDataCommandReturnCode = ProtoField.new("P2P Data Command Return Code", "eufySecurity.p2pCommandReturnCode", ftypes.STRING, nil, nil, nil, "TODO")
 
 -- add the fields to the protocol
 -- (to confirm this worked, check that these fields appeared in the "Filter Expression" dialog)
@@ -398,7 +481,9 @@ eufySecurity_proto.fields = {
   F_p2pSeqNo,
   F_p2pDataType,
   F_p2pDataCommandId,
-  F_p2pAckSeqNo
+  F_p2pAckSeqNo,
+  F_p2pAckSeqNoCount,
+  F_p2pDataCommandReturnCode
 }
 
 -- Cloud ips of eufy security
@@ -462,12 +547,22 @@ function eufySecurity_proto.dissector(buffer, pinfo, tree)
   if (str_type == "ACK") then
     local seqNumbers = ""
     local p2pNumAcks = buffer(6, 2):uint()
+    subtree:add(F_p2pAckSeqNoCount, buffer(6, 2), p2pNumAcks)
     for i=1,p2pNumAcks do
       local idx = 6 + (i * 2)
       local seq = buffer(idx, 2):uint()
       seqNumbers = seqNumbers .. seq .. "; "
     end
     subtree:add(F_p2pAckSeqNo, buffer(6, (2 * p2pNumAcks) + 2), seqNumbers)
+    
+    -- Data Type
+    local p2pDataType = buffer(4, 2):uint()
+    if (dataTypes[p2pDataType]) then
+      subtree:add(F_p2pDataType, buffer(4, 2), dataTypes[p2pDataType])
+      pinfo.cols.info:append(" - " ..  dataTypes[p2pDataType])
+    else
+      subtree:add(F_p2pDataType, buffer(4, 2), "Unknown DataType")
+    end
   end
 
   if (str_type == "DATA") then
@@ -483,7 +578,7 @@ function eufySecurity_proto.dissector(buffer, pinfo, tree)
       
       local p2pMagicWord = buffer(8, 4):string()
       -- DATA information
-      if (p2pMagicWord == "XZYH") and (dataTypes[p2pDataType] == "DATA" or dataTypes[p2pDataType] == "VIDEO") then
+      if (p2pMagicWord == "XZYH") then
         -- Command Id
         local p2pDataCommandId = buffer(12, 2):le_uint()
         if (commandIds[p2pDataCommandId]) then
@@ -491,6 +586,17 @@ function eufySecurity_proto.dissector(buffer, pinfo, tree)
           pinfo.cols.info:append(" - " .. commandIds[p2pDataCommandId])
         else
           subtree:add(F_p2pDataCommandId, buffer(12, 2), "Unknown: " .. p2pDataCommandId)
+        end
+        local p2pDataPacketIdent = buffer(14, 1):le_uint()
+        if (p2pDataPacketIdent == 132) then
+            local p2pDataCommantReturnCode = buffer(24, 4):le_int()
+            if (errorCodes[p2pDataCommantReturnCode]) then
+                subtree:add(F_p2pDataCommandReturnCode, buffer(24, 4), "" .. errorCodes[p2pDataCommantReturnCode] .. " (" .. p2pDataCommantReturnCode .. ")")
+                pinfo.cols.info:append(" - RC: " .. errorCodes[p2pDataCommantReturnCode])
+            else
+                subtree:add(F_p2pDataCommandReturnCode, buffer(24, 4), "" .. p2pDataCommantReturnCode)
+                pinfo.cols.info:append(" - RC: " .. p2pDataCommantReturnCode)
+            end
         end
       end
     else
