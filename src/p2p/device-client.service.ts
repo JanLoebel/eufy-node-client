@@ -212,8 +212,9 @@ export class DeviceClientService {
       // sort by keys
       let completeMessage = Buffer.from([]);
       Object.keys(messages)
-        .sort() // assure the seqNumbers are in correct order
-        .forEach((key: string) => {
+        .map(Number)
+        .sort((a, b) => a - b) // assure the seqNumbers are in correct order
+        .forEach((key: number) => {
           completeMessage = Buffer.concat([completeMessage, messages[parseInt(key)]]);
         });
       this.currentControlMessageBuilder = { bytesRead: 0, bytesToRead: 0, commandId: 0, messages: {} };
