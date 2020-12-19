@@ -460,10 +460,22 @@ local F_p2pAddrPort = ProtoField.new("P2P Addr Port", "eufySecurity.p2pAddrPort"
 local F_p2pAddrIp = ProtoField.new("P2P Addr Ip", "eufySecurity.p2pAddrIp", ftypes.STRING, nil, nil, nil, "TODO")
 local F_p2pSeqNo = ProtoField.new("P2P SeqNo", "eufySecurity.p2pSeqNo", ftypes.UINT8, nil, nil, nil, "TODO")
 local F_p2pDataType = ProtoField.new("P2P DataType", "eufySecurity.p2pDataType", ftypes.STRING, nil, nil, nil, "TODO")
-local F_p2pDataCommandId = ProtoField.new("P2P Data Command Id", "eufySecurity.p2pCommandId", ftypes.STRING, nil, nil, nil, "TODO")
+local F_p2pDataCommandId = ProtoField.new("P2P Data Command Id", "eufySecurity.p2pCommandId", ftypes.UINT16, nil, nil, nil, "TODO")
+local F_p2pDataCommandIdDesc = ProtoField.new("P2P Data Command Id Description", "eufySecurity.p2pCommandIdDesc", ftypes.STRING, nil, nil, nil, "TODO")
 local F_p2pAckSeqNo = ProtoField.new("P2P Ack SeqNumbers", "eufySecurity.p2pAckSeqNos", ftypes.STRING, nil, nil, nil, "TODO")
 local F_p2pAckSeqNoCount = ProtoField.new("P2P Ack SeqNumbers Count", "eufySecurity.p2pAckSeqNosCount", ftypes.UINT16, nil, nil, nil, "TODO")
 local F_p2pDataCommandReturnCode = ProtoField.new("P2P Data Command Return Code", "eufySecurity.p2pCommandReturnCode", ftypes.STRING, nil, nil, nil, "TODO")
+local F_p2pDataChannel = ProtoField.new("P2P Data Channel", "eufySecurity.p2pChannel", ftypes.UINT8, nil, nil, nil, "TODO")
+local F_p2pDataToRead = ProtoField.new("P2P Data to read", "eufySecurity.p2pDataToRead", ftypes.UINT16, nil, nil, nil, "TODO")
+
+local F_p2pVideoSeqNo = ProtoField.new("Video SeqNo", "eufySecurity.p2pVideoSeqNo", ftypes.UINT16, nil, nil, nil, "TODO")
+local F_p2pVideoHeight = ProtoField.new("Video Height", "eufySecurity.p2pVideoHeight", ftypes.UINT16, nil, nil, nil, "TODO")
+local F_p2pVideoWidth = ProtoField.new("Video Width", "eufySecurity.p2pVideoWidth", ftypes.UINT16, nil, nil, nil, "TODO")
+local F_p2pVideoFPS = ProtoField.new("Video FPS", "eufySecurity.p2pVideoFPS", ftypes.UINT16, nil, nil, nil, "TODO")
+local F_p2pVideoTimestamp = ProtoField.new("Video Timestamp", "eufySecurity.p2pVideoTimestamp", ftypes.UINT64, nil, nil, nil, "TODO")
+
+local F_p2pAudioSeqNo = ProtoField.new("Audio SeqNo", "eufySecurity.p2pAudioSeqNo", ftypes.UINT16, nil, nil, nil, "TODO")
+local F_p2pAudioTimestamp = ProtoField.new("Audio Timestamp", "eufySecurity.p2pAudioTimestamp", ftypes.UINT64, nil, nil, nil, "TODO")
 
 -- add the fields to the protocol
 -- (to confirm this worked, check that these fields appeared in the "Filter Expression" dialog)
@@ -481,9 +493,19 @@ eufySecurity_proto.fields = {
   F_p2pSeqNo,
   F_p2pDataType,
   F_p2pDataCommandId,
+  F_p2pDataCommandIdDesc,
+  F_p2pDataChannel,
+  F_p2pDataToRead,
   F_p2pAckSeqNo,
   F_p2pAckSeqNoCount,
-  F_p2pDataCommandReturnCode
+  F_p2pDataCommandReturnCode,
+  F_p2pVideoSeqNo,
+  F_p2pVideoHeight,
+  F_p2pVideoWidth,
+  F_p2pVideoFPS,
+  F_p2pVideoTimestamp,
+  F_p2pAudioSeqNo,
+  F_p2pAudioTimestamp,
 }
 
 -- Cloud ips of eufy security
@@ -581,14 +603,17 @@ function eufySecurity_proto.dissector(buffer, pinfo, tree)
       if (p2pMagicWord == "XZYH") then
         -- Command Id
         local p2pDataCommandId = buffer(12, 2):le_uint()
+        
         if (commandIds[p2pDataCommandId]) then
-          subtree:add(F_p2pDataCommandId, buffer(12, 2), "" .. commandIds[p2pDataCommandId] .. " (" .. p2pDataCommandId .. ")")
+          subtree:add(F_p2pDataCommandId, buffer(12, 2), p2pDataCommandId)
+          subtree:add(F_p2pDataCommandIdDesc, buffer(12, 2), commandIds[p2pDataCommandId])
           pinfo.cols.info:append(" - " .. commandIds[p2pDataCommandId])
         else
-          subtree:add(F_p2pDataCommandId, buffer(12, 2), "Unknown: " .. p2pDataCommandId)
+          subtree:add(F_p2pDataCommandId, buffer(12, 2), p2pDataCommandId)
+          subtree:add(F_p2pDataCommandIdDesc, buffer(12, 2), "Unknown")
         end
         local p2pDataPacketIdent = buffer(14, 1):le_uint()
-        if (p2pDataPacketIdent == 132) then
+        if (dataTypes[p2pDataType] == "DATA" and p2pDataPacketIdent == 132) then
             local p2pDataCommantReturnCode = buffer(24, 4):le_int()
             if (errorCodes[p2pDataCommantReturnCode]) then
                 subtree:add(F_p2pDataCommandReturnCode, buffer(24, 4), "" .. errorCodes[p2pDataCommantReturnCode] .. " (" .. p2pDataCommantReturnCode .. ")")
@@ -597,6 +622,35 @@ function eufySecurity_proto.dissector(buffer, pinfo, tree)
                 subtree:add(F_p2pDataCommandReturnCode, buffer(24, 4), "" .. p2pDataCommantReturnCode)
                 pinfo.cols.info:append(" - RC: " .. p2pDataCommantReturnCode)
             end
+        else
+            local p2pDataChannel = buffer(20, 1):uint()
+            subtree:add(F_p2pDataChannel, buffer(20, 1), p2pDataChannel)
+            
+            local p2pDataToRead = buffer(14, 2):le_uint()
+            subtree:add(F_p2pDataToRead, buffer(14, 2), p2pDataToRead)
+            
+        end
+        if (p2pDataCommandId == 1300) then
+            -- VIDEO FRAME
+            local p2pVideoSeqNo = buffer(30, 2):le_uint()
+            local p2pVideoFPS = buffer(32, 2):le_uint()
+            local p2pVideoWidth = buffer(34, 2):le_uint()
+            local p2pVideoHeight = buffer(36, 2):le_uint()
+            local p2pVideoTimestamp = buffer(38, 6):le_uint64()
+            
+            subtree:add(F_p2pVideoSeqNo, buffer(30, 2), p2pVideoSeqNo)
+            subtree:add(F_p2pVideoFPS, buffer(32, 2), p2pVideoFPS)
+            subtree:add(F_p2pVideoWidth, buffer(34, 2), p2pVideoWidth)
+            subtree:add(F_p2pVideoHeight, buffer(36, 2), p2pVideoHeight)
+            subtree:add(F_p2pVideoTimestamp, buffer(38, 6), p2pVideoTimestamp)
+            
+        elseif (p2pDataCommandId == 1301) then
+            -- AUDIO FRAME
+            local p2pAudioSeqNo = buffer(30, 2):le_uint()
+            local p2pAudioTimestamp = buffer(32, 6):le_uint64()
+            
+            subtree:add(F_p2pAudioSeqNo, buffer(30, 2), p2pAudioSeqNo)
+            subtree:add(F_p2pAudioTimestamp, buffer(32, 6), p2pAudioTimestamp)         
         end
       end
     else
