@@ -117,7 +117,7 @@ export class HttpService {
       return true;
     }
     const now = Math.floor(+new Date() / 1000);
-    return this.currentLoginResult.token_expires_at >= now;
+    return this.currentLoginResult.token_expires_at <= now;
   }
 
   private async login(email: string, password: string): Promise<LoginResult> {
