@@ -215,7 +215,7 @@ export class DeviceClientService {
         .map(Number)
         .sort((a, b) => a - b) // assure the seqNumbers are in correct order
         .forEach((key: number) => {
-          completeMessage = Buffer.concat([completeMessage, messages[parseInt(key)]]);
+          completeMessage = Buffer.concat([completeMessage, messages[key]]);
         });
       this.currentControlMessageBuilder = { bytesRead: 0, bytesToRead: 0, commandId: 0, messages: {} };
       this.handleDataControl(commandId, completeMessage.toString());
