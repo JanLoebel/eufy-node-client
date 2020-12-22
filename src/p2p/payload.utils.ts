@@ -38,7 +38,23 @@ export const buildIntCommandPayload = (value: number, actor: string, channel = 2
 };
 
 export const buildStringTypeCommandPayload = (strValue: string, actor: string, channel = 255): Buffer => {
-  const magic = Buffer.from([0x05, 0x01, 0x00, 0x00, 0x01, 0x00, channel, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+  const magic = Buffer.from([
+    0x05,
+    0x01,
+    0x00,
+    0x00,
+    0x01,
+    0x00,
+    channel,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+  ]);
   const strValueBuffer = stringWithLength(strValue, 128);
   const valueStrSubBuffer = stringWithLength(actor, 128);
   return Buffer.concat([magic, strValueBuffer, valueStrSubBuffer]);
