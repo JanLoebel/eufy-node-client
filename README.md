@@ -1,3 +1,8 @@
+# DEPRECATED
+Please checkout https://github.com/bropat/eufy-security-client he continued to develop the client there!
+
+
+
 # eufy-node-client
 
 Experiment to send/receive/control messages from eufy security. Currently I only have the doorbell with a station. My basic target is to be able to control the guard mode of the station and receive doorbell events if somebody is on the door.
